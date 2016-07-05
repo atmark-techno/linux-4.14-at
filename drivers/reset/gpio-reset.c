@@ -90,6 +90,7 @@ static int gpio_reset_probe(struct platform_device *pdev)
 	enum of_gpio_flags flags;
 	unsigned long gpio_flags;
 	bool initially_in_reset;
+	bool reset_on_init;
 	int ret;
 
 	drvdata = devm_kzalloc(&pdev->dev, sizeof(*drvdata), GFP_KERNEL);
@@ -135,6 +136,12 @@ static int gpio_reset_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to request gpio %d: %d\n",
 			drvdata->gpio, ret);
 		return ret;
+	}
+
+	if (!initially_in_reset) {
+		reset_on_init = of_property_read_bool(np, "reset-on-init");
+		if (reset_on_init)
+			gpio_reset(&drvdata->rcdev, 0);
 	}
 
 	platform_set_drvdata(pdev, drvdata);

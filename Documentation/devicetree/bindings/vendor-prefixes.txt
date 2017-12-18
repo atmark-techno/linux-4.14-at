@@ -39,6 +39,7 @@ artesyn	Artesyn Embedded Technologies Inc.
 asahi-kasei	Asahi Kasei Corp.
 aspeed	ASPEED Technology Inc.
 atlas	Atlas Scientific LLC
+atmark	Atmark Techno, Inc.
 atmel	Atmel Corporation
 auo	AU Optronics Corporation
 auvidea Auvidea GmbH

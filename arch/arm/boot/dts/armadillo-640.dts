@@ -33,6 +33,16 @@
 	status = "okay";
 };
 
+&usdhc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc2>;
+	broken-cd;
+	no-1-8-v;
+	keep-power-in-suspend;
+	wakeup-source;
+	status = "okay";
+};
+
 &iomuxc {
 	pinctrl-names = "default";
 
@@ -61,6 +71,18 @@
 			MX6UL_PAD_ENET1_RX_ER__ENET1_RX_ER	0x1b0b0
 			MX6UL_PAD_ENET1_RX_EN__ENET1_RX_EN	0x1b0b0
 			MX6UL_PAD_ENET1_TX_CLK__ENET1_REF_CLK1	0x4001b031
+		>;
+	};
+
+	pinctrl_usdhc2: usdhc2grp {
+		fsl,pins = <
+			MX6UL_PAD_NAND_DATA00__USDHC2_DATA0 0x10059
+			MX6UL_PAD_NAND_DATA01__USDHC2_DATA1 0x10059
+			MX6UL_PAD_NAND_DATA02__USDHC2_DATA2 0x10059
+			MX6UL_PAD_NAND_DATA03__USDHC2_DATA3 0x10059
+			MX6UL_PAD_NAND_RE_B__USDHC2_CLK     0x10069
+			MX6UL_PAD_NAND_WE_B__USDHC2_CMD     0x10059
+			MX6UL_PAD_NAND_ALE__USDHC2_RESET_B  0x00008
 		>;
 	};
 };

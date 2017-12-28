@@ -10,6 +10,7 @@
 #include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
 #include <linux/micrel_phy.h>
 #include <linux/of_platform.h>
+#include <linux/pm_opp.h>
 #include <linux/phy.h>
 #include <linux/regmap.h>
 #include <asm/mach/arch.h>
@@ -79,12 +80,38 @@ static void __init imx6ul_init_irq(void)
 	imx6_pm_ccm_init("fsl,imx6ul-ccm");
 }
 
+static void __init imx6ul_opp_init(void)
+{
+	struct device_node *np;
+	struct device *cpu_dev = get_cpu_device(0);
+
+	if (!cpu_dev) {
+		pr_warn("failed to get cpu0 device\n");
+		return;
+	}
+	np = of_node_get(cpu_dev->of_node);
+	if (!np) {
+		pr_warn("failed to find cpu0 node\n");
+		return;
+	}
+
+	if (dev_pm_opp_of_add_table(cpu_dev)) {
+		pr_warn("failed to init OPP table\n");
+		goto put_node;
+	}
+
+put_node:
+	of_node_put(np);
+}
+
 static void __init imx6ul_init_late(void)
 {
 	imx6sx_cpuidle_init();
 
-	if (IS_ENABLED(CONFIG_ARM_IMX6Q_CPUFREQ))
+	if (IS_ENABLED(CONFIG_ARM_IMX6Q_CPUFREQ)) {
+		imx6ul_opp_init();
 		platform_device_register_simple("imx6q-cpufreq", -1, NULL, 0);
+	}
 }
 
 static const char * const imx6ul_dt_compat[] __initconst = {

@@ -53,6 +53,34 @@
 			linux,default-trigger = "none";
 		};
 	};
+
+	regulators {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		reg_usbotg1_vbus: regulator-usbotg1vbus {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usbotg1_vbus>;
+			compatible = "regulator-fixed";
+			regulator-name = "USB_OTG1_VBUS";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			gpio = <&gpio1 19 GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+		};
+
+		reg_usbotg2_vbus: regulator-usbotg2vbus {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usbotg2_vbus>;
+			compatible = "regulator-fixed";
+			regulator-name = "USB_OTG2_VBUS";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			gpio = <&gpio4 17 GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+		};
+	};
 };
 
 &uart1 {
@@ -159,15 +187,29 @@
 			MX6UL_PAD_UART1_CTS_B__GPIO1_IO18  0x00008
 		>;
 	};
+
+	pinctrl_usbotg1_vbus: usbotg1vbusgrp {
+		fsl,pins = <
+			MX6UL_PAD_UART1_RTS_B__GPIO1_IO19  0x00008
+		>;
+	};
+
+	pinctrl_usbotg2_vbus: usbotg2vbusgrp {
+		fsl,pins = <
+			MX6UL_PAD_CSI_MCLK__GPIO4_IO17     0x00008
+		>;
+	};
 };
 
 &usbotg1 {
+	vbus-supply = <&reg_usbotg1_vbus>;
 	dr_mode = "host";
 	disable-over-current;
 	status = "okay";
 };
 
 &usbotg2 {
+	vbus-supply = <&reg_usbotg2_vbus>;
 	dr_mode = "host";
 	disable-over-current;
 	status = "okay";

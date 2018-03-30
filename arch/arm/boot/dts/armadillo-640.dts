@@ -161,6 +161,12 @@
 	};
 };
 
+&usbotg1 {
+	dr_mode = "host";
+	disable-over-current;
+	status = "okay";
+};
+
 &usbotg2 {
 	dr_mode = "host";
 	disable-over-current;

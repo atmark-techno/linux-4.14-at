@@ -31,6 +31,28 @@
 			linux,code = <KEY_ENTER>;
 		};
 	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_leds>;
+
+		red {
+			label = "red";
+			gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "default-on";
+		};
+		green {
+			label = "green";
+			gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "default-on";
+		};
+		yellow {
+			label = "yellow";
+			gpios = <&gpio1 18 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "none";
+		};
+	};
 };
 
 &uart1 {
@@ -127,6 +149,14 @@
 	pinctrl_gpio_keys: gpiokeysgrp {
 		fsl,pins = <
 			MX6UL_PAD_JTAG_MOD__GPIO1_IO10     0x13080
+		>;
+	};
+
+	pinctrl_gpio_leds: gpioledsgrp {
+		fsl,pins = <
+			MX6UL_PAD_GPIO1_IO05__GPIO1_IO05   0x00008
+			MX6UL_PAD_GPIO1_IO08__GPIO1_IO08   0x00008
+			MX6UL_PAD_UART1_CTS_B__GPIO1_IO18  0x00008
 		>;
 	};
 };

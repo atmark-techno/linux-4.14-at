@@ -191,3 +191,7 @@
 		};
 	};
 };
+
+&snvs_poweroff {
+	status = "okay";
+};

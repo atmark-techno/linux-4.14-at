@@ -252,6 +252,9 @@
 
 		ethphy0: ethernet-phy@0 {
 			compatible = "ethernet-phy-ieee802.3-c22";
+			reset-gpios = <&gpio4 11 GPIO_ACTIVE_LOW>;
+			reset-delay-us = <800>;
+			reset-post-delay-us = <15000>;
 			reg = <0>;
 			clocks = <&clks IMX6UL_CLK_ENET_REF>;
 			clock-names = "rmii-ref";

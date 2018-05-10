@@ -219,6 +219,12 @@
 			MX6UL_PAD_NAND_ALE__GPIO4_IO10  0x00008
 		>;
 	};
+
+	pinctrl_wdog: wdoggrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_RESET__WDOG1_WDOG_ANY    0x30b0
+			>;
+	};
 };
 
 &usbotg1 {
@@ -265,4 +271,11 @@
 
 &snvs_poweroff {
 	status = "okay";
+};
+
+&wdog1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_wdog>;
+	timeout-sec = <10>;
+	fsl,ext-reset-output;
 };

@@ -1,0 +1,90 @@
+/*
+ * Copyright (C) 2018 Atmark Techno, Inc. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: (GPL-2.0 OR MIT)
+ */
+
+/dts-v1/;
+
+#include "armadillo-640.dts"
+
+/ {
+	i2c-gpio1 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c_gpio1>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		gpios = <
+			&gpio3 24 GPIO_ACTIVE_HIGH	/* SDA */
+			&gpio3 23 GPIO_ACTIVE_HIGH	/* SCL */
+		>;
+		i2c-gpio,delay-us = <2>;
+
+		rtc-nr3225sa {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_rtc_nr3225sa>;
+
+			compatible = "ndk,nr3225sa";
+			reg = <0x32>;
+
+			interrupt-parent = <&gpio3>;
+			interrupts = <26 IRQ_TYPE_EDGE_FALLING>;
+		};
+	};
+
+	wlan_pwren_b_reset: awlan-reset {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wlan_pwren_b>;
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio3 25 GPIO_ACTIVE_HIGH>;
+
+		/* awl13 needs time for power discharging that takes 500 msec */
+		reset-delay-us = <500000>;
+
+		reset-on-init;
+		#reset-cells = <0>;
+	};
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+
+	pinctrl_i2c_gpio1: i2cgpio1grp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA18__GPIO3_IO23  0x00008
+			MX6UL_PAD_LCD_DATA19__GPIO3_IO24  0x00008
+			>;
+	};
+
+	pinctrl_rtc_nr3225sa: rtcnr3225sagrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA21__GPIO3_IO26  0x08000
+			>;
+	};
+
+	pinctrl_wlan_pwren_b: wlanpwrenbgrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA20__GPIO3_IO25	0x40000008
+		>;
+	};
+
+	pinctrl_usb2_port_en: usb2portengrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA23__GPIO3_IO28	0x40000008
+		>;
+	};
+};
+
+&gpio3 {
+	usb2_port_en {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usb2_port_en>;
+
+		gpio-hog;
+		gpios = <28 GPIO_ACTIVE_HIGH>;
+		line-name = "USB2_PORT_EN";
+		output-low;	/* low: USB2 via CON9, high: USB2 via CON5 */
+	};
+};

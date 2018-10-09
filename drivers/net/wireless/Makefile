@@ -24,6 +24,8 @@ obj-$(CONFIG_WLAN_VENDOR_QUANTENNA) += quantenna/
 obj-$(CONFIG_PCMCIA_RAYCS)	+= ray_cs.o
 obj-$(CONFIG_PCMCIA_WL3501)	+= wl3501_cs.o
 
+obj-$(CONFIG_ARMADILLO_WLAN_AWL13) += awl13/
+
 obj-$(CONFIG_USB_NET_RNDIS_WLAN)	+= rndis_wlan.o
 
 obj-$(CONFIG_MAC80211_HWSIM)	+= mac80211_hwsim.o

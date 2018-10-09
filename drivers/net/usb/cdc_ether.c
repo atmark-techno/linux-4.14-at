@@ -821,6 +821,18 @@ static const struct usb_device_id	products[] = {
 	.driver_info = 0,
 },
 
+/* ROHM BU1805 */
+{
+	USB_DEVICE (0x04B5, 0x0102),
+	.driver_info	= 0,
+},
+
+/* ROHM BU1805(debug) */
+{
+	USB_DEVICE (0x0D4B, 0x0112),
+	.driver_info	= 0,
+},
+
 /* WHITELIST!!!
  *
  * CDC Ether uses two interfaces, not necessarily consecutive.

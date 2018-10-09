@@ -1,0 +1,100 @@
+/*
+ * awl13_ioctl.h
+ *
+ *  Copyright (C) 2008 Nissin Systems Co.,Ltd.
+ *  Copyright (C) 2008-2011 Atmark Techno, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * 2008-05-05    Created by Nissin Systems Co.,Ltd.
+ * 2009-06-19   Modified by Atmark Techno, Inc.
+ * 2011-11-25   Modified by Atmark Techno, Inc.
+ */
+
+#ifndef _AWL13_IOCTL_H_
+#define _AWL13_IOCTL_H_
+
+#include <linux/wireless.h>
+#include "awl13_wid.h"
+
+#define SUPPORTED_WIRELESS_EXT	18
+
+/* PRIVATE COMMAND */
+
+#define AWL13_PRIV_FWLOAD			(SIOCIWFIRSTPRIV + 0)
+#define AWL13_PRIV_FWSETUP			(SIOCIWFIRSTPRIV + 1)
+#define AWL13_PRIV_SETMAC			(SIOCIWFIRSTPRIV + 2)
+#define AWL13_PRIV_GETMAC			(SIOCIWFIRSTPRIV + 3)
+#define AWL13_PRIV_SETCRYPT		(SIOCIWFIRSTPRIV + 4)
+#define AWL13_PRIV_GETCRYPT		(SIOCIWFIRSTPRIV + 5)
+#define AWL13_PRIV_SETPSK			(SIOCIWFIRSTPRIV + 6)
+#define AWL13_PRIV_GETPSK			(SIOCIWFIRSTPRIV + 7)
+#define AWL13_PRIV_SETWID8			(SIOCIWFIRSTPRIV + 8)
+#define AWL13_PRIV_GETWID8			(SIOCIWFIRSTPRIV + 9)
+#define AWL13_PRIV_SETWID16		(SIOCIWFIRSTPRIV + 10)
+#define AWL13_PRIV_GETWID16		(SIOCIWFIRSTPRIV + 11)
+#define AWL13_PRIV_SETWID32		(SIOCIWFIRSTPRIV + 12)
+#define AWL13_PRIV_GETWID32		(SIOCIWFIRSTPRIV + 13)
+#define AWL13_PRIV_SETWIDSTR		(SIOCIWFIRSTPRIV + 14)
+#define AWL13_PRIV_GETWIDSTR		(SIOCIWFIRSTPRIV + 15)
+#define AWL13_PRIV_SETWPSPIN		(SIOCIWFIRSTPRIV + 16)
+#define AWL13_PRIV_GETWPSPIN		(SIOCIWFIRSTPRIV + 17)
+#define	AWL13_IOCTL_SETPARAM_INT	(SIOCIWFIRSTPRIV + 18)
+#define	AWL13_IOCTL_GETPARAM_INT	(SIOCIWFIRSTPRIV + 19)
+#define	AWL13_IOCTL_SETPARAM_STR	(SIOCIWFIRSTPRIV + 20)
+#define	AWL13_IOCTL_GETPARAM_STR	(SIOCIWFIRSTPRIV + 21)
+#define AWL13_PRIV_SETWID_INT		(SIOCIWFIRSTPRIV + 22)
+#define AWL13_PRIV_GETIWD_INT		(SIOCIWFIRSTPRIV + 23)
+#define AWL13_PRIV_SETWPSCREDLIST	(SIOCIWFIRSTPRIV + 24)
+#define AWL13_PRIV_GETWPSCREDLIST	(SIOCIWFIRSTPRIV + 25)
+#define AWL13_PRIV_SETLOG			(SIOCIWFIRSTPRIV + 30)
+#define AWL13_PRIV_GETLOG			(SIOCIWFIRSTPRIV + 31)
+
+enum {
+	AWL13_PARAMS_INT_WID_AUTH_TYPE,
+	AWL13_PARAMS_INT_WID_SITE_SURVEY,
+	AWL13_PARAMS_INT_WID_JOIN_REQ,
+	AWL13_PARAMS_INT_WID_11I_MODE,
+	AWL13_PARAMS_INT_WID_POWER_MANAGEMENT,
+	AWL13_PARAMS_INT_WID_SCAN_TYPE,
+	AWL13_PARAMS_INT_WID_POWER_SAVE,
+	AWL13_PARAMS_INT_WID_BEACON_INTERVAL,
+	AWL13_PARAMS_INT_WID_LISTEN_INTERVAL,
+	AWL13_PARAMS_INT_WID_BCAST_SSID,
+	AWL13_PARAMS_INT_WID_DTIM_PERIOD,
+	AWL13_PARAMS_INT_WID_REKEY_POLICY,
+	AWL13_PARAMS_INT_WID_REKEY_PERIOD,
+	AWL13_PARAMS_INT_WID_SCAN_FILTER,
+#ifdef CONFIG_ARMADILLO_WLAN_AWL13_USB
+	AWL13_PARAMS_INT_WID_USB_IN_XFER_MODE,
+#endif /* CONFIG_ARMADILLO_WLAN_AWL13_USB */
+	AWL13_PARAMS_INT_WPSDMD,
+	AWL13_PARAMS_INT_WPSST,
+#ifdef CONFIG_ARMADILLO_WLAN_AWL13_USB
+	AWL13_PARAMS_INT_WID_USB_RMTWKUP_TIME,
+#endif /* CONFIG_ARMADILLO_WLAN_AWL13_USB */
+	AWL13_PARAMS_INT_WID_NUMBER, /* number of this command */
+};
+
+enum {
+	AWL13_PARAMS_STR_WID_FIRMWARE_VERSION		= 1,
+	AWL13_PARAMS_STR_DRIVER_VERSION, 
+};
+
+extern void awl13_wireless_attach(struct net_device *dev);
+extern int awl13_start_ap_scan(struct awl13_private *priv,
+				struct awl13_survey_res *survey);
+
+#endif /* _AWL13_IOCTL_H_ */

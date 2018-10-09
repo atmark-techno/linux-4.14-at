@@ -1,0 +1,34 @@
+config ARMADILLO_WLAN_AWL13
+       bool "Armadillo-WLAN(AWL13)"
+       select WIRELESS_EXT
+       select WEXT_PRIV
+       default n
+       help
+         Enable this if you use Armadillo-WLAN(AWL13).
+
+if ARMADILLO_WLAN_AWL13
+
+menu "Armadillo-WLAN(AWL13) Driver Options"
+
+choice
+	prompt "Selected AWL13 interface"
+	default ARMADILLO_WLAN_AWL13_SEL_USB
+
+config ARMADILLO_WLAN_AWL13_USB
+	bool "USB"
+
+config ARMADILLO_WLAN_AWL13_SDIO
+	bool "SDIO (NOT TESTED)"
+
+endchoice
+
+config ARMADILLO_WLAN_AWL13_WMM
+	bool
+	depends on ARMADILLO_WLAN_AWL13
+	default n
+	help
+	  not tested
+
+endmenu
+
+endif # ARMADILLO_WLAN_AWL13

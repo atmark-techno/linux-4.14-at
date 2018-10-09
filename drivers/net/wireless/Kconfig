@@ -72,6 +72,8 @@ config PCMCIA_WL3501
 	  It has basic support for Linux wireless extensions and initial
 	  micro support for ethtool.
 
+source "drivers/net/wireless/awl13/Kconfig"
+
 config MAC80211_HWSIM
 	tristate "Simulated radio testing tool for mac80211"
 	depends on MAC80211

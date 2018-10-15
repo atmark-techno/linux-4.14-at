@@ -153,6 +153,11 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3>;
 	status = "okay";
+	uart-has-rtscts;
+	dtr-gpios = <&gpio1 00 GPIO_ACTIVE_LOW>;
+	dsr-gpios = <&gpio5 00 GPIO_ACTIVE_LOW>;
+	dcd-gpios = <&gpio5 02 GPIO_ACTIVE_LOW>;
+	rng-gpios = <&gpio5 01 GPIO_ACTIVE_LOW>;
 };
 
 &uart5 {
@@ -206,6 +211,12 @@
 		fsl,pins = <
 			MX6UL_PAD_UART3_TX_DATA__UART3_DCE_TX 0x00008
 			MX6UL_PAD_UART3_RX_DATA__UART3_DCE_RX 0x1b0b1
+			MX6UL_PAD_UART3_RTS_B__UART3_DCE_RTS 0x1b0b1
+			MX6UL_PAD_UART3_CTS_B__UART3_DCE_CTS 0x00008
+			MX6UL_PAD_GPIO1_IO00__GPIO1_IO00 0x00008 /*DTR*/
+			MX6ULL_PAD_SNVS_TAMPER0__GPIO5_IO00 0x1b0b1/*DSR*/
+			MX6ULL_PAD_SNVS_TAMPER2__GPIO5_IO02 0x1b0b1/*DCD*/
+			MX6ULL_PAD_SNVS_TAMPER1__GPIO5_IO01 0x1b0b1/*RI*/
 		>;
 	};
 

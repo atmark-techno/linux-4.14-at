@@ -139,6 +139,8 @@
 #define MIN_XRES			120
 #define MIN_YRES			120
 
+#define SCREEN_NUM			2
+
 #define RED 0
 #define GREEN 1
 #define BLUE 2
@@ -279,7 +281,7 @@ static int mxsfb_check_var(struct fb_var_screeninfo *var,
 
 	var->xres_virtual = var->xres;
 
-	var->yres_virtual = var->yres;
+	var->yres_virtual = var->yres * SCREEN_NUM;
 
 	switch (var->bits_per_pixel) {
 	case 16:
@@ -825,7 +827,7 @@ static int mxsfb_init_fbinfo(struct mxsfb_info *host,
 	var->vmode = FB_VMODE_NONINTERLACED;
 
 	/* Memory allocation for framebuffer */
-	fb_size = SZ_2M;
+	fb_size = SZ_2M * SCREEN_NUM;
 	fb_virt = dma_alloc_wc(dev, PAGE_ALIGN(fb_size), &fb_phys, GFP_KERNEL);
 	if (!fb_virt)
 		return -ENOMEM;

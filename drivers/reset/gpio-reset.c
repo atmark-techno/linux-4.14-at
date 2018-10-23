@@ -44,9 +44,15 @@ static int gpio_reset(struct reset_controller_dev *rcdev, unsigned long id)
 	if (drvdata->delay_us < 0)
 		return -ENOSYS;
 
-	udelay(drvdata->wait_delay_us);
+	if ((drvdata->wait_delay_us / 1000) >  MAX_UDELAY_MS)
+		mdelay(drvdata->wait_delay_us / 1000);
+	else
+		udelay(drvdata->wait_delay_us);
 	gpio_reset_set(rcdev, 1);
-	udelay(drvdata->delay_us);
+	if ((drvdata->delay_us / 1000) >  MAX_UDELAY_MS)
+		mdelay(drvdata->delay_us / 1000);
+	else
+		udelay(drvdata->delay_us);
 	gpio_reset_set(rcdev, 0);
 
 	return 0;

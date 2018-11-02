@@ -21,6 +21,7 @@
 #define REG_SET		0x4
 #define REG_CLR		0x8
 
+#define ANADIG_REG_3P0		0x120
 #define ANADIG_REG_2P5		0x130
 #define ANADIG_REG_CORE		0x140
 #define ANADIG_ANA_MISC0	0x150
@@ -30,6 +31,7 @@
 #define ANADIG_DIGPROG_IMX6SL	0x280
 #define ANADIG_DIGPROG_IMX7D	0x800
 
+#define BM_ANADIG_REG_3P0_VBUS_SEL		0x80
 #define BM_ANADIG_REG_2P5_ENABLE_WEAK_LINREG	0x40000
 #define BM_ANADIG_REG_2P5_ENABLE_PULLDOWN	0x8
 #define BM_ANADIG_REG_CORE_FET_ODRIVE		0x20000000
@@ -107,6 +109,12 @@ static void imx_anatop_usb_chrg_detect_disable(void)
 	regmap_write(anatop, ANADIG_USB2_CHRG_DETECT,
 		BM_ANADIG_USB_CHRG_DETECT_EN_B |
 		BM_ANADIG_USB_CHRG_DETECT_CHK_CHRG_B);
+}
+
+void imx_anatop_3p0_vbus_sel(bool sel)
+{
+	regmap_write(anatop, ANADIG_REG_3P0 + (sel ? REG_SET : REG_CLR),
+		BM_ANADIG_REG_3P0_VBUS_SEL);
 }
 
 void __init imx_init_revision_from_anatop(void)

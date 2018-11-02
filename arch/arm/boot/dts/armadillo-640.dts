@@ -94,6 +94,12 @@
 		};
 	};
 
+	vbus_sel: vbus-sel {
+		compatible = "imx6-vbus-sel";
+		otg1-vbus-reg-supply = <&reg_usbotg1_vbus>;
+		otg2-vbus-reg-supply = <&reg_usbotg2_vbus>;
+	};
+
 	backlight_display: backlight-display {
 		compatible = "pwm-backlight";
 		pwms = <&pwm7 0 5000000>;

@@ -1249,8 +1249,8 @@ awl13_port_status( struct awl13_private *priv,
 		awl_err("usb_submit_urb(URB-CONTROL) error. (0x%x,%d)\n", type, ret );
 		return -1;
 	}
-    if(psta)
-    	*psta = priv->port_status;
+	if(psta)
+		*psta = priv->port_status;
 	return 0;
 }
 

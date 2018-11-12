@@ -9,6 +9,10 @@
 #include "armadillo-640.dts"
 
 / {
+	aliases {
+		rtc0 = &rtc_nr3225sa;
+	};
+
 	i2c-gpio1 {
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_i2c_gpio1>;
@@ -22,7 +26,7 @@
 		>;
 		i2c-gpio,delay-us = <2>;
 
-		rtc-nr3225sa {
+		rtc_nr3225sa: rtc-nr3225sa {
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_rtc_nr3225sa>;
 

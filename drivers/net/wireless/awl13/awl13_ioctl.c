@@ -1710,7 +1710,7 @@ awl13_ip_setwidstr(struct net_device *dev, struct iw_request_info *info,
 	int			size;
 	int			ret;
 	int			loop,flag;
-	unsigned char		action_req[1024];
+	unsigned char		*action_req = priv->tmp_buf;
 	
         param[wri->length]=0x00;
 	for( flag=0, loop=0 ; 
@@ -1749,7 +1749,7 @@ awl13_ip_setwidstr(struct net_device *dev, struct iw_request_info *info,
        ((wid & 0xF000)== 0x4000) ){
 	    unsigned char sum = 0;
 		char  temp[2] = {0,0};
-		memset( action_req, 0x00, sizeof(action_req) );
+		memset( action_req, 0x00, AWL13_PRIV_TMP_BUF_SZ );
 		size = size/2;
 		for(loop=0; loop<size; loop++){
 			temp[0] = *(p2+(loop*2));
@@ -1794,15 +1794,15 @@ awl13_ip_getwidstr(struct net_device *dev, struct iw_request_info *info,
 	unsigned int 		timeout= WID_DEFAULT_TIMEOUT;
 	int			size;
 	unsigned short 		wid;
-	unsigned char 		val[1024];
+	unsigned char 		*val = priv->tmp_buf;
 	int			ret;
 
-	memset(val, 0x00, sizeof(val));
+	memset(val, 0x00, AWL13_PRIV_TMP_BUF_SZ);
 	copy_from_user(param, wri->pointer, wri->length);
         param[wri->length]=0x00;
 	wid = simple_strtol( param, (char **)NULL, 16);
-	size= sizeof(val);
-	ret = awl13_get_common_value(priv, wid, &val, size, timeout );
+	size= AWL13_PRIV_TMP_BUF_SZ;
+	ret = awl13_get_common_value(priv, wid, val, size, timeout );
 	if (ret<0){
 		awl_err("The getting of WID(0x%x) faild. \n", wid );
 		return -EINVAL;
@@ -1811,7 +1811,7 @@ awl13_ip_getwidstr(struct net_device *dev, struct iw_request_info *info,
 	if( (wid == WID_BSSID) || (wid == WID_MAC_ADDR) ) size = 6;
     if( (wid & 0xF000) == 0x4000 ) size = ret;
 	awl_info("The getting of WID(0x%x) succeeded. (size=%d)\n", wid, size );
-    awl13_dump(LOGLVL_1, &val, size );
+    awl13_dump(LOGLVL_1, val, size );
 //	strcpy(extra, val);
 //	wri->length = size;
 	wri->length = 0;

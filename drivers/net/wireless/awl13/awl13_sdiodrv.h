@@ -254,6 +254,9 @@ struct awl13_private {
 	char			bssid[ETH_ALEN];
 	union iwreq_data	iwap;
 	struct iw_statistics	iwstats;
+
+#define AWL13_PRIV_TMP_BUF_SZ 1024
+	unsigned char tmp_buf[AWL13_PRIV_TMP_BUF_SZ];
 };
 
 /* LEDs */

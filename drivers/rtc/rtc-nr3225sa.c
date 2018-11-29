@@ -480,6 +480,8 @@ static int nr3225sa_probe(struct i2c_client *client,
 		return PTR_ERR(nr3225sa->rtc);
 	}
 
+	device_init_wakeup(&client->dev, true);
+
 	/* the nr3225sa alarm only supports a minute accuracy */
 	nr3225sa->rtc->uie_unsupported = 1;
 
@@ -500,13 +502,45 @@ static int nr3225sa_probe(struct i2c_client *client,
 
 	nr3225sa->rtc->ops = &nr3225sa_rtc_ops;
 	err = rtc_register_device(nr3225sa->rtc);
-	if (err)
+	if (err) {
+		device_init_wakeup(&client->dev, false);
 		return err;
+	}
 
 	nr3225sa->rtc->max_user_freq = 1;
 
 	return 0;
 }
+
+#ifdef CONFIG_PM
+static int nr3225sa_suspend(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+
+	if (device_may_wakeup(dev))
+		enable_irq_wake(client->irq);
+
+	return 0;
+}
+
+static int nr3225sa_resume(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+
+	if (device_may_wakeup(dev))
+		disable_irq_wake(client->irq);
+
+	return 0;
+}
+#else
+#define nr3225sa_suspend	NULL
+#define nr3225sa_resume		NULL
+#endif  /* CONFIG_PM */
+
+static const struct dev_pm_ops nr3225sa_pm_ops = {
+	.suspend = nr3225sa_suspend,
+	.resume  = nr3225sa_resume,
+};
 
 static const struct i2c_device_id nr3225sa_id[] = {
 	{ "nr3225sa", 0 },
@@ -525,6 +559,7 @@ MODULE_DEVICE_TABLE(of, nr3225sa_of_match);
 static struct i2c_driver nr3225sa_driver = {
 	.driver = {
 		.name = "rtc-nr3225sa",
+		.pm = &nr3225sa_pm_ops,
 		.of_match_table = nr3225sa_of_match,
 	},
 	.probe		= nr3225sa_probe,

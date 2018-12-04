@@ -46,11 +46,11 @@
 #define NR3225SA_FLAG_TF			BIT(2)
 #define NR3225SA_FLAG_UTF			BIT(0)
 
-#define NR3225SA_CTRL_RESET		BIT(0)
+#define NR3225SA_CTRL_RESET		BIT(7)
 
 #define NR3225SA_CTRL_AIE			BIT(1)
 #define NR3225SA_CTRL_TIE			BIT(2)
-#define NR3225SA_CTRL_UTIE			BIT(5)
+#define NR3225SA_CTRL_UTIE			BIT(0)
 
 struct nr3225sa_data {
 	struct i2c_client *client;

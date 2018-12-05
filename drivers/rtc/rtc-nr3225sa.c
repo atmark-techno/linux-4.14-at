@@ -45,6 +45,9 @@
 #define NR3225SA_FLAG_AF			BIT(1)
 #define NR3225SA_FLAG_TF			BIT(2)
 #define NR3225SA_FLAG_UTF			BIT(0)
+#define NR3225SA_FLAG_MASK			\
+	(NR3225SA_FLAG_VDHF | NR3225SA_FLAG_VDLF | NR3225SA_FLAG_AF | \
+	 NR3225SA_FLAG_TF | NR3225SA_FLAG_UTF)
 
 #define NR3225SA_CTRL_RESET		BIT(7)
 
@@ -134,6 +137,7 @@ static irqreturn_t nr3225sa_handle_irq(int irq, void *dev_id)
 	struct nr3225sa_data *nr3225sa = i2c_get_clientdata(client);
 	unsigned long events = 0;
 	int flags;
+	u8 new_flags = NR3225SA_FLAG_MASK;
 
 	mutex_lock(&nr3225sa->flags_lock);
 
@@ -150,26 +154,26 @@ static irqreturn_t nr3225sa_handle_irq(int irq, void *dev_id)
 		dev_warn(&client->dev, "Voltage low, data loss detected.\n");
 
 	if (flags & NR3225SA_FLAG_TF) {
-		flags &= ~NR3225SA_FLAG_TF;
+		new_flags &= ~NR3225SA_FLAG_TF;
 		nr3225sa->ctrl &= ~NR3225SA_CTRL_TIE;
 		events |= RTC_PF;
 	}
 
 	if (flags & NR3225SA_FLAG_AF) {
-		flags &= ~NR3225SA_FLAG_AF;
+		new_flags &= ~NR3225SA_FLAG_AF;
 		nr3225sa->ctrl &= ~NR3225SA_CTRL_AIE;
 		events |= RTC_AF;
 	}
 
 	if (flags & NR3225SA_FLAG_UTF) {
-		flags &= ~NR3225SA_FLAG_UTF;
+		new_flags &= ~NR3225SA_FLAG_UTF;
 		nr3225sa->ctrl &= ~NR3225SA_CTRL_UTIE;
 		events |= RTC_UF;
 	}
 
 	if (events) {
 		rtc_update_irq(nr3225sa->rtc, 1, events);
-		nr3225sa_write_reg(client, NR3225SA_FLAG, flags);
+		nr3225sa_write_reg(client, NR3225SA_FLAG, new_flags);
 		nr3225sa_write_reg(nr3225sa->client, NR3225SA_CTRL, nr3225sa->ctrl);
 	}
 
@@ -223,7 +227,7 @@ static int nr3225sa_set_time(struct device *dev, struct rtc_time *tm)
 {
 	struct nr3225sa_data *nr3225sa = dev_get_drvdata(dev);
 	u8 date[7];
-	int ctrl, flags, ret;
+	int ctrl, ret;
 
 	if ((tm->tm_year < 100) || (tm->tm_year > 199))
 		return -EINVAL;
@@ -258,14 +262,8 @@ static int nr3225sa_set_time(struct device *dev, struct rtc_time *tm)
 
 	mutex_lock(&nr3225sa->flags_lock);
 
-	flags = nr3225sa_read_reg(nr3225sa->client, NR3225SA_FLAG);
-	if (flags < 0) {
-		mutex_unlock(&nr3225sa->flags_lock);
-		return flags;
-	}
-
 	ret = nr3225sa_write_reg(nr3225sa->client, NR3225SA_FLAG,
-			       flags & ~(NR3225SA_FLAG_VDHF | NR3225SA_FLAG_VDLF));
+			       NR3225SA_FLAG_MASK & ~(NR3225SA_FLAG_VDHF | NR3225SA_FLAG_VDLF));
 
 	mutex_unlock(&nr3225sa->flags_lock);
 
@@ -300,11 +298,10 @@ static int nr3225sa_get_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 
 static int nr3225sa_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 {
-	struct i2c_client *client = to_i2c_client(dev);
 	struct nr3225sa_data *nr3225sa = dev_get_drvdata(dev);
 	u8 alarmvals[3];
-	u8 ctrl[2];
-	int ret, err;
+	u8 flags;
+	int err;
 
 	/* The alarm has no seconds, round up to nearest minute */
 	if (alrm->time.tm_sec) {
@@ -315,12 +312,6 @@ static int nr3225sa_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	}
 
 	mutex_lock(&nr3225sa->flags_lock);
-
-	ret = nr3225sa_read_regs(client, NR3225SA_FLAG, 2, ctrl);
-	if (ret) {
-		mutex_unlock(&nr3225sa->flags_lock);
-		return ret;
-	}
 
 	alarmvals[0] = bin2bcd(alrm->time.tm_min);
 	alarmvals[1] = bin2bcd(alrm->time.tm_hour);
@@ -336,8 +327,8 @@ static int nr3225sa_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 		}
 	}
 
-	ctrl[1] &= ~NR3225SA_FLAG_AF;
-	err = nr3225sa_write_reg(nr3225sa->client, NR3225SA_FLAG, ctrl[1]);
+	flags = NR3225SA_FLAG_MASK & ~NR3225SA_FLAG_AF;
+	err = nr3225sa_write_reg(nr3225sa->client, NR3225SA_FLAG, flags);
 	mutex_unlock(&nr3225sa->flags_lock);
 	if (err)
 		return err;
@@ -382,12 +373,7 @@ static int nr3225sa_alarm_irq_enable(struct device *dev, unsigned int enabled)
 	}
 
 	mutex_lock(&nr3225sa->flags_lock);
-	flags = nr3225sa_read_reg(client, NR3225SA_FLAG);
-	if (flags < 0) {
-		mutex_unlock(&nr3225sa->flags_lock);
-		return flags;
-	}
-	flags &= ~(NR3225SA_FLAG_AF | NR3225SA_FLAG_UTF);
+	flags = NR3225SA_FLAG_MASK & ~(NR3225SA_FLAG_AF | NR3225SA_FLAG_UTF);
 	err = nr3225sa_write_reg(client, NR3225SA_FLAG, flags);
 	mutex_unlock(&nr3225sa->flags_lock);
 	if (err)
@@ -430,13 +416,7 @@ static int nr3225sa_ioctl(struct device *dev, unsigned int cmd, unsigned long ar
 
 	case RTC_VL_CLR:
 		mutex_lock(&nr3225sa->flags_lock);
-		flags = nr3225sa_read_reg(client, NR3225SA_FLAG);
-		if (flags < 0) {
-			mutex_unlock(&nr3225sa->flags_lock);
-			return flags;
-		}
-
-		flags &= ~(NR3225SA_FLAG_VDHF | NR3225SA_FLAG_VDLF);
+		flags = NR3225SA_FLAG_MASK & ~(NR3225SA_FLAG_VDHF | NR3225SA_FLAG_VDLF);
 		ret = nr3225sa_write_reg(client, NR3225SA_FLAG, flags);
 		mutex_unlock(&nr3225sa->flags_lock);
 		if (ret)

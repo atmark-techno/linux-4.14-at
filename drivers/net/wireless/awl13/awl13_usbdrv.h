@@ -252,6 +252,7 @@ static inline void
 awl13_deactivate_thread(struct awl13_thread *thr)
 {
 	complete(&thr->complete);
+	thr->pid = 0;
 }
 
 static inline void

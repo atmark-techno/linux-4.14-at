@@ -609,18 +609,14 @@ awl13_tx_thread(void *thr)
 	
 	thread->flags = 0;
 	
-	for(;;) {
+	while (!kthread_should_stop()) {
 		set_current_state(TASK_INTERRUPTIBLE);
 		add_wait_queue(&thread->waitQ, &wait);
 		schedule();
 		remove_wait_queue(&thread->waitQ, &wait);
 		set_current_state(TASK_RUNNING);
-		if (kthread_should_stop()) {
-			awl_debug("main-thread: break from main thread\n");
-			break;
-		}
 		
-		for (;;) {
+		while (!kthread_should_stop()) {
 #ifdef CONFIG_ARMADILLO_WLAN_AWL13_WMM
 			if ((ac = awl13_wmm_nextqueue(thread)) < 0) {
 				awl_err("awl13_wmm_nextqueue(thread=%p) on %d\n", thread, ac);
@@ -651,6 +647,7 @@ awl13_tx_thread(void *thr)
 			}
 		}
 	}
+	awl_debug("main-thread: break from main thread\n");
 	awl13_deactivate_thread(thread);
 	return 0;
 }

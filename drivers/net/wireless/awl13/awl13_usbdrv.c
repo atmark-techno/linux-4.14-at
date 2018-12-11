@@ -2336,6 +2336,63 @@ awl13_usbnet_resume(struct usb_interface *intf)
 	awl_info("%s() called\n", __func__);
 	return 0;
 }
+#else /* LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,21) */
+#ifdef CONFIG_PM
+/******************************************************************************
+ * awl13_usb_suspend  -
+ *
+ *****************************************************************************/
+static int
+awl13_usbnet_suspend(struct usb_interface *intf, pm_message_t message)
+{
+	struct awl13_usbnet	*dev = usb_get_intfdata(intf);
+	struct awl13_data	*data = (struct awl13_data *)dev->data;
+	struct awl13_private	*priv = data->priv;
+	int ret;
+
+	awl_debug("%s() called\n", __func__);
+
+	if (priv->txthr.task)
+		awl13_terminate_thread(&priv->txthr);
+
+	if (priv->txthr.pid) {
+		wake_up_interruptible(&priv->txthr.waitQ);
+		if ((ret =
+		     wait_for_completion_interruptible(&priv->txthr.complete)))
+			{
+				awl_err("%s: wait_for_completion_interruptible"
+					"(tx_thr complete) failed on %d\n",
+					__func__, ret);
+			}
+	}
+
+	priv->probe_flags.do_task_quit = 1;
+	atomic_set(&priv->modstate, AWL13_MODSTATE_NONE);
+
+	return 0;
+}
+
+/******************************************************************************
+ * awl13_usb_resume  -
+ *
+ *****************************************************************************/
+static int
+awl13_usbnet_resume(struct usb_interface *intf)
+{
+	struct awl13_usbnet	*dev = usb_get_intfdata(intf);
+	struct awl13_data	*data = (struct awl13_data *)dev->data;
+	struct awl13_private	*priv = data->priv;
+
+	awl_debug("%s() called\n", __func__);
+
+	atomic_set(&priv->modstate, AWL13_MODSTATE_EXIST);
+	priv->probe_flags.do_task_quit = 0;
+
+	awl13_create_thread(awl13_tx_thread, &priv->txthr, "awl13_txthr");
+
+	return 0;
+}
+#endif /* CONFIG_PM */
 #endif /* LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,21) */
 /******************************************************************************
  * awl13_usbnet_tx_timeout  -
@@ -2992,6 +3049,10 @@ static struct usb_driver awl13_driver = {
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,21)
 	.supports_autosuspend = 0,
+#ifdef CONFIG_PM
+	.suspend =	awl13_usbnet_suspend,
+	.resume =	awl13_usbnet_resume,
+#endif /* CONFIG_PM */
 #else /* LINUX_VERSION_CODE > KERNEL_VERSION(2,6,21) */
 	.suspend =	awl13_usbnet_suspend,
 	.resume =	awl13_usbnet_resume,

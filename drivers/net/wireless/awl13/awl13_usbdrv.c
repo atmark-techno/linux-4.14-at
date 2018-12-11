@@ -1534,6 +1534,9 @@ awl13_pm_thread(void *thr)
 		}
 		set_current_state(TASK_INTERRUPTIBLE);
 	} while (!kthread_should_stop());
+
+	awl13_deactivate_thread(thread);
+
 	return 0;
 }
 

@@ -258,6 +258,11 @@ awl13_deactivate_thread(struct awl13_thread *thr)
 static inline void
 awl13_create_thread(int (*func) (void *), struct awl13_thread *thr, char *name)
 {
+    if (thr->task) {
+        awl_debug ("%s: thread already running\n", name);
+        return;
+    }
+
     thr->task = kthread_run(func, thr, "%s", name);
 }
 
@@ -268,6 +273,7 @@ awl13_terminate_thread(struct awl13_thread *thr)
         return -1;
     }
     kthread_stop(thr->task);
+    thr->task = NULL;
 
     return 0;
 }

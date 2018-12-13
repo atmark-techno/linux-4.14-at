@@ -7,14 +7,13 @@
 /dts-v1/;
 
 #include "imx6ull.dtsi"
+#include "armadillo-640-default-console.dtsi"
+#include "armadillo-640-uart5.dtsi"
+#include "armadillo-640-lcd70ext-l00.dtsi"
 
 / {
 	model = "Atmark Techno Armadillo-640";
 	compatible = "atmark,a640", "fsl,imx6ull";
-
-	chosen {
-		stdout-path = &uart1;
-	};
 
 	memory {
 		reg = <0x80000000 0x20000000>;
@@ -99,60 +98,6 @@
 		otg1-vbus-reg-supply = <&reg_usbotg1_vbus>;
 		otg2-vbus-reg-supply = <&reg_usbotg2_vbus>;
 	};
-
-	backlight_display: backlight-display {
-		compatible = "pwm-backlight";
-		pwms = <&pwm7 0 5000000>;
-		brightness-levels = <0 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155 156 157 158 159 160 161 162 163 164 165 166 167 168 169 170 171 172 173 174 175 176 177 178 179 180 181 182 183 184 185 186 187 188 189 190 191 192 193 194 195 196 197 198 199 200 201 202 203 204 205 206 207 208 209 210 211 212 213 214 215 216 217 218 219 220 221 222 223 224 225 226 227 228 229 230 231 232 233 234 235 236 237 238 239 240 241 242 243 244 245 246 247 248 249 250 251 252 253 254 255>;
-		default-brightness-level = <128>;
-		status = "okay";
-	};
-
-	regulators: regulators0 {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		reg_5v: regulator@0 {
-			compatible = "regulator-fixed";
-			reg = <0>;
-			regulator-name = "5V";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			gpio = <&gpio4 15 GPIO_ACTIVE_HIGH>;
-		};
-	};
-
-	i2c_gpio: i2c-gpio {
-		compatible = "i2c-gpio";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_i2c_gpio>;
-		gpios = <
-			&gpio4 21 GPIO_ACTIVE_HIGH /* SDA */
-			&gpio4 24 GPIO_ACTIVE_HIGH /* SCL */
-		>;
-		i2c-gpio,delay-us = <2>;
-
-		status = "okay";
-
-		touchpanel@51 {
-			compatible = "hid-over-i2c";
-			interrupt-parent = <&gpio4>;
-			interrupts = <18 IRQ_TYPE_NONE>;
-			reg = <0x51>;
-			hid-descr-addr = <0x0001>;
-			vdd-supply = <&reg_5v>;
-			reset-gpio = <&gpio1 4 GPIO_ACTIVE_HIGH>;
-		};
-	};
-};
-
-&uart1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_uart1>;
-	status = "okay";
 };
 
 &uart3 {
@@ -164,12 +109,6 @@
 	dsr-gpios = <&gpio5 00 GPIO_ACTIVE_LOW>;
 	dcd-gpios = <&gpio5 02 GPIO_ACTIVE_LOW>;
 	rng-gpios = <&gpio5 01 GPIO_ACTIVE_LOW>;
-};
-
-&uart5 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_uart5>;
-	status = "okay";
 };
 
 &usdhc1 {
@@ -197,22 +136,12 @@
 
 &iomuxc {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_hog>;
+	pinctrl-0 = <
+#ifdef ARMADILLO640_LCD70EXT_L00
+			&pinctrl_lcd70ext_l00hog
+#endif
+		    >;
 
-	pinctrl_hog: hoggrp {
-		fsl,pins = <
-			MX6UL_PAD_GPIO1_IO04__GPIO1_IO04      0x1b0b0
-			MX6UL_PAD_CSI_PIXCLK__GPIO4_IO18      0x1b0b0
-			MX6UL_PAD_GPIO1_IO03__GPIO1_IO03      0x130b0 /* 18BIT_ENABLE */
-		>;
-	};
-
-	pinctrl_uart1: uart1grp {
-		fsl,pins = <
-			MX6UL_PAD_UART1_TX_DATA__UART1_DCE_TX 0x00008
-			MX6UL_PAD_UART1_RX_DATA__UART1_DCE_RX 0x1b0b1
-		>;
-	};
 	pinctrl_uart3: uart3grp {
 		fsl,pins = <
 			MX6UL_PAD_UART3_TX_DATA__UART3_DCE_TX 0x00008
@@ -223,13 +152,6 @@
 			MX6ULL_PAD_SNVS_TAMPER0__GPIO5_IO00 0x1b0b1/*DSR*/
 			MX6ULL_PAD_SNVS_TAMPER2__GPIO5_IO02 0x1b0b1/*DCD*/
 			MX6ULL_PAD_SNVS_TAMPER1__GPIO5_IO01 0x1b0b1/*RI*/
-		>;
-	};
-
-	pinctrl_uart5: uart5grp {
-		fsl,pins = <
-		MX6UL_PAD_UART5_TX_DATA__UART5_DCE_TX 0x00008
-		MX6ULL_PAD_UART5_RX_DATA__UART5_DCE_RX 0x1b0b1
 		>;
 	};
 
@@ -312,51 +234,6 @@
 			MX6UL_PAD_LCD_RESET__WDOG1_WDOG_ANY    0x30b0
 			>;
 	};
-
-	pinctrl_pwm7: pwm7grp {
-		fsl,pins = <
-			MX6UL_PAD_CSI_VSYNC__PWM7_OUT   0x110b0
-		>;
-	};
-
-	pinctrl_lcdif_dat: lcdifdatgrp {
-		fsl,pins = <
-			MX6UL_PAD_LCD_DATA00__LCDIF_DATA00  0x08
-			MX6UL_PAD_LCD_DATA01__LCDIF_DATA01  0x08
-			MX6UL_PAD_LCD_DATA02__LCDIF_DATA02  0x08
-			MX6UL_PAD_LCD_DATA03__LCDIF_DATA03  0x08
-			MX6UL_PAD_LCD_DATA04__LCDIF_DATA04  0x08
-			MX6UL_PAD_LCD_DATA05__LCDIF_DATA05  0x08
-			MX6UL_PAD_LCD_DATA06__LCDIF_DATA06  0x08
-			MX6UL_PAD_LCD_DATA07__LCDIF_DATA07  0x08
-			MX6UL_PAD_LCD_DATA08__LCDIF_DATA08  0x08
-			MX6UL_PAD_LCD_DATA09__LCDIF_DATA09  0x08
-			MX6UL_PAD_LCD_DATA10__LCDIF_DATA10  0x08
-			MX6UL_PAD_LCD_DATA11__LCDIF_DATA11  0x08
-			MX6UL_PAD_LCD_DATA12__LCDIF_DATA12  0x08
-			MX6UL_PAD_LCD_DATA13__LCDIF_DATA13  0x08
-			MX6UL_PAD_LCD_DATA14__LCDIF_DATA14  0x08
-			MX6UL_PAD_LCD_DATA15__LCDIF_DATA15  0x08
-			MX6UL_PAD_LCD_DATA16__LCDIF_DATA16  0x08
-			MX6UL_PAD_LCD_DATA17__LCDIF_DATA17  0x08
-		>;
-	};
-
-	pinctrl_lcdif_ctrl: lcdifctrlgrp {
-		fsl,pins = <
-			MX6UL_PAD_LCD_CLK__LCDIF_CLK	    0x08
-			MX6UL_PAD_LCD_ENABLE__LCDIF_ENABLE  0x08
-			MX6UL_PAD_LCD_HSYNC__LCDIF_HSYNC    0x08
-			MX6UL_PAD_LCD_VSYNC__LCDIF_VSYNC    0x08
-		>;
-	};
-
-	pinctrl_i2c_gpio: i2c-gpiogrp {
-		fsl,pins = <
-			MX6UL_PAD_CSI_DATA03__GPIO4_IO24  0x4001b8b1 /* SCL */
-			MX6UL_PAD_CSI_DATA00__GPIO4_IO21  0x4001b8b1 /* SDA */
-		>;
-	};
 };
 
 &usbotg1 {
@@ -410,40 +287,4 @@
 	pinctrl-0 = <&pinctrl_wdog>;
 	timeout-sec = <10>;
 	fsl,ext-reset-output;
-};
-
-&pwm7 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_pwm7>;
-	status = "okay";
-};
-
-&lcdif {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_lcdif_dat
-		     &pinctrl_lcdif_ctrl>;
-	display = <&display0>;
-	status = "okay";
-
-	display0: display {
-		bits-per-pixel = <32>;
-		bus-width = <18>;
-
-		display-timings {
-			timing0: timing {
-				/* GT800X480A-1013R */
-				clock-frequency = <30600000>;
-				hactive = <800>;
-				vactive = <480>;
-				hback-porch = <32>;
-				hfront-porch = <13>;
-				vback-porch = <88>;
-				vfront-porch = <40>;
-				hsync-len = <48>;
-				vsync-len = <3>;
-				de-active = <1>;
-				pixelclk-active = <0>;
-			};
-		};
-	};
 };

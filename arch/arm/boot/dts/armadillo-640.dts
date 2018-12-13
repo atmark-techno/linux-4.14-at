@@ -7,9 +7,11 @@
 /dts-v1/;
 
 #include "imx6ull.dtsi"
+#ifndef ARMADILLO640_AT_DTWEB
 #include "armadillo-640-default-console.dtsi"
 #include "armadillo-640-uart5.dtsi"
 #include "armadillo-640-lcd70ext-l00.dtsi"
+#endif
 
 / {
 	model = "Atmark Techno Armadillo-640";
@@ -139,6 +141,9 @@
 	pinctrl-0 = <
 #ifdef ARMADILLO640_LCD70EXT_L00
 			&pinctrl_lcd70ext_l00hog
+#endif
+#ifdef ARMADILLO640_AT_DTWEB
+			&pinctrl_expansion_interfacehog
 #endif
 		    >;
 

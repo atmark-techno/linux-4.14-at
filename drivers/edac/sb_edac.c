@@ -279,7 +279,7 @@ static const u32 correrrthrsld[] = {
  * sbridge structs
  */
 
-#define NUM_CHANNELS		4	/* Max channels per MC */
+#define NUM_CHANNELS		6	/* Max channels per MC */
 #define MAX_DIMMS		3	/* Max DIMMS per channel */
 #define KNL_MAX_CHAS		38	/* KNL max num. of Cache Home Agents */
 #define KNL_MAX_CHANNELS	6	/* KNL max num. of PCI channels */
@@ -2891,6 +2891,7 @@ static void sbridge_mce_output_error(struct mem_ctl_info *mci,
 		recoverable = GET_BITFIELD(m->status, 56, 56);
 
 	if (uncorrected_error) {
+		core_err_cnt = 1;
 		if (ripv) {
 			type = "FATAL";
 			tp_event = HW_EVENT_ERR_FATAL;

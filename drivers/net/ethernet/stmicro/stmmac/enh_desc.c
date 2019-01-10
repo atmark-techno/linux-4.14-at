@@ -262,7 +262,7 @@ static void enh_desc_init_rx_desc(struct dma_desc *p, int disable_rx_ic,
 				  int mode, int end)
 {
 	p->des0 |= cpu_to_le32(RDES0_OWN);
-	p->des1 |= cpu_to_le32((BUF_SIZE_8KiB - 1) & ERDES1_BUFFER1_SIZE_MASK);
+	p->des1 |= cpu_to_le32(BUF_SIZE_8KiB & ERDES1_BUFFER1_SIZE_MASK);
 
 	if (mode == STMMAC_CHAIN_MODE)
 		ehn_desc_rx_set_on_chain(p);
@@ -400,7 +400,8 @@ static u64 enh_desc_get_timestamp(void *desc, u32 ats)
 	return ns;
 }
 
-static int enh_desc_get_rx_timestamp_status(void *desc, u32 ats)
+static int enh_desc_get_rx_timestamp_status(void *desc, void *next_desc,
+					    u32 ats)
 {
 	if (ats) {
 		struct dma_extended_desc *p = (struct dma_extended_desc *)desc;

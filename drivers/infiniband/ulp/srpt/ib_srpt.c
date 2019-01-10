@@ -787,13 +787,17 @@ static int srpt_post_recv(struct srpt_device *sdev,
  */
 static int srpt_zerolength_write(struct srpt_rdma_ch *ch)
 {
-	struct ib_send_wr wr, *bad_wr;
+	struct ib_send_wr *bad_wr;
+	struct ib_rdma_wr wr = {
+		.wr = {
+			.next		= NULL,
+			{ .wr_cqe	= &ch->zw_cqe, },
+			.opcode		= IB_WR_RDMA_WRITE,
+			.send_flags	= IB_SEND_SIGNALED,
+		}
+	};
 
-	memset(&wr, 0, sizeof(wr));
-	wr.opcode = IB_WR_RDMA_WRITE;
-	wr.wr_cqe = &ch->zw_cqe;
-	wr.send_flags = IB_SEND_SIGNALED;
-	return ib_post_send(ch->qp, &wr, &bad_wr);
+	return ib_post_send(ch->qp, &wr.wr, &bad_wr);
 }
 
 static void srpt_zerolength_write_done(struct ib_cq *cq, struct ib_wc *wc)
@@ -1000,8 +1004,7 @@ static int srpt_init_ch_qp(struct srpt_rdma_ch *ch, struct ib_qp *qp)
 		return -ENOMEM;
 
 	attr->qp_state = IB_QPS_INIT;
-	attr->qp_access_flags = IB_ACCESS_LOCAL_WRITE | IB_ACCESS_REMOTE_READ |
-	    IB_ACCESS_REMOTE_WRITE;
+	attr->qp_access_flags = IB_ACCESS_LOCAL_WRITE;
 	attr->port_num = ch->sport->port;
 	attr->pkey_index = 0;
 
@@ -1710,8 +1713,7 @@ static bool srpt_close_ch(struct srpt_rdma_ch *ch)
 	int ret;
 
 	if (!srpt_set_ch_state(ch, CH_DRAINING)) {
-		pr_debug("%s-%d: already closed\n", ch->sess_name,
-			 ch->qp->qp_num);
+		pr_debug("%s: already closed\n", ch->sess_name);
 		return false;
 	}
 
@@ -1773,8 +1775,8 @@ static void __srpt_close_all_ch(struct srpt_device *sdev)
 
 	list_for_each_entry(ch, &sdev->rch_list, list) {
 		if (srpt_disconnect_ch(ch) >= 0)
-			pr_info("Closing channel %s-%d because target %s has been disabled\n",
-				ch->sess_name, ch->qp->qp_num,
+			pr_info("Closing channel %s because target %s has been disabled\n",
+				ch->sess_name,
 				sdev->device->name);
 		srpt_close_ch(ch);
 	}
@@ -1992,7 +1994,7 @@ static int srpt_cm_req_recv(struct ib_cm_id *cm_id,
 		goto destroy_ib;
 	}
 
-	guid = (__be16 *)&param->primary_path->sgid.global.interface_id;
+	guid = (__be16 *)&param->primary_path->dgid.global.interface_id;
 	snprintf(ch->ini_guid, sizeof(ch->ini_guid), "%04x:%04x:%04x:%04x",
 		 be16_to_cpu(guid[0]), be16_to_cpu(guid[1]),
 		 be16_to_cpu(guid[2]), be16_to_cpu(guid[3]));

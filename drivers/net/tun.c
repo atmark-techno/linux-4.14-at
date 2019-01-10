@@ -575,8 +575,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
 			    tun->dev->reg_state == NETREG_REGISTERED)
 				unregister_netdevice(tun->dev);
 		}
-		if (tun)
-			skb_array_cleanup(&tfile->tx_array);
+		skb_array_cleanup(&tfile->tx_array);
 		sock_put(&tfile->sk);
 	}
 }
@@ -666,7 +665,7 @@ static int tun_attach(struct tun_struct *tun, struct file *file, bool skip_filte
 	}
 
 	if (!tfile->detached &&
-	    skb_array_init(&tfile->tx_array, dev->tx_queue_len, GFP_KERNEL)) {
+	    skb_array_resize(&tfile->tx_array, dev->tx_queue_len, GFP_KERNEL)) {
 		err = -ENOMEM;
 		goto out;
 	}
@@ -1215,6 +1214,7 @@ static void tun_rx_batched(struct tun_struct *tun, struct tun_file *tfile,
 
 	if (!rx_batched || (!more && skb_queue_empty(queue))) {
 		local_bh_disable();
+		skb_record_rx_queue(skb, tfile->queue_index);
 		netif_receive_skb(skb);
 		local_bh_enable();
 		return;
@@ -1234,8 +1234,11 @@ static void tun_rx_batched(struct tun_struct *tun, struct tun_file *tfile,
 		struct sk_buff *nskb;
 
 		local_bh_disable();
-		while ((nskb = __skb_dequeue(&process_queue)))
+		while ((nskb = __skb_dequeue(&process_queue))) {
+			skb_record_rx_queue(nskb, tfile->queue_index);
 			netif_receive_skb(nskb);
+		}
+		skb_record_rx_queue(skb, tfile->queue_index);
 		netif_receive_skb(skb);
 		local_bh_enable();
 	}
@@ -1306,6 +1309,7 @@ static struct sk_buff *tun_build_skb(struct tun_struct *tun,
 	else
 		*skb_xdp = 0;
 
+	local_bh_disable();
 	rcu_read_lock();
 	xdp_prog = rcu_dereference(tun->xdp_prog);
 	if (xdp_prog && !*skb_xdp) {
@@ -1324,9 +1328,11 @@ static struct sk_buff *tun_build_skb(struct tun_struct *tun,
 			get_page(alloc_frag->page);
 			alloc_frag->offset += buflen;
 			err = xdp_do_redirect(tun->dev, &xdp, xdp_prog);
+			xdp_do_flush_map();
 			if (err)
 				goto err_redirect;
 			rcu_read_unlock();
+			local_bh_enable();
 			return NULL;
 		case XDP_TX:
 			xdp_xmit = true;
@@ -1348,6 +1354,7 @@ static struct sk_buff *tun_build_skb(struct tun_struct *tun,
 	skb = build_skb(buf, buflen);
 	if (!skb) {
 		rcu_read_unlock();
+		local_bh_enable();
 		return ERR_PTR(-ENOMEM);
 	}
 
@@ -1360,10 +1367,12 @@ static struct sk_buff *tun_build_skb(struct tun_struct *tun,
 		skb->dev = tun->dev;
 		generic_xdp_tx(skb, xdp_prog);
 		rcu_read_unlock();
+		local_bh_enable();
 		return NULL;
 	}
 
 	rcu_read_unlock();
+	local_bh_enable();
 
 	return skb;
 
@@ -1371,6 +1380,7 @@ err_redirect:
 	put_page(alloc_frag->page);
 err_xdp:
 	rcu_read_unlock();
+	local_bh_enable();
 	this_cpu_inc(tun->pcpu_stats->rx_dropped);
 	return NULL;
 }
@@ -1540,16 +1550,19 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
 		struct bpf_prog *xdp_prog;
 		int ret;
 
+		local_bh_disable();
 		rcu_read_lock();
 		xdp_prog = rcu_dereference(tun->xdp_prog);
 		if (xdp_prog) {
 			ret = do_xdp_generic(xdp_prog, skb);
 			if (ret != XDP_PASS) {
 				rcu_read_unlock();
+				local_bh_enable();
 				return total_len;
 			}
 		}
 		rcu_read_unlock();
+		local_bh_enable();
 	}
 
 	rxhash = __skb_get_hash_symmetric(skb);
@@ -1629,7 +1642,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
 			return -EINVAL;
 
 		if (virtio_net_hdr_from_skb(skb, &gso,
-					    tun_is_little_endian(tun), true)) {
+					    tun_is_little_endian(tun), true,
+					    vlan_hlen)) {
 			struct skb_shared_info *sinfo = skb_shinfo(skb);
 			pr_err("unexpected GSO type: "
 			       "0x%x, gso_size %d, hdr_len %d\n",
@@ -1804,7 +1818,9 @@ static void tun_setup(struct net_device *dev)
 static int tun_validate(struct nlattr *tb[], struct nlattr *data[],
 			struct netlink_ext_ack *extack)
 {
-	return -EINVAL;
+	NL_SET_ERR_MSG(extack,
+		       "tun/tap creation via rtnetlink is not supported.");
+	return -EOPNOTSUPP;
 }
 
 static struct rtnl_link_ops tun_link_ops __read_mostly = {
@@ -2604,6 +2620,11 @@ static int tun_chr_open(struct inode *inode, struct file * file)
 					    &tun_proto, 0);
 	if (!tfile)
 		return -ENOMEM;
+	if (skb_array_init(&tfile->tx_array, 0, GFP_KERNEL)) {
+		sk_free(&tfile->sk);
+		return -ENOMEM;
+	}
+
 	RCU_INIT_POINTER(tfile->tun, NULL);
 	tfile->flags = 0;
 	tfile->ifindex = 0;

@@ -371,6 +371,7 @@ static ssize_t config_num_requests_store(struct device *dev,
 	if (test_fw_config->reqs) {
 		pr_err("Must call release_all_firmware prior to changing config\n");
 		rc = -EINVAL;
+		mutex_unlock(&test_fw_mutex);
 		goto out;
 	}
 	mutex_unlock(&test_fw_mutex);
@@ -837,6 +838,7 @@ static ssize_t read_firmware_show(struct device *dev,
 	if (req->fw->size > PAGE_SIZE) {
 		pr_err("Testing interface must use PAGE_SIZE firmware for now\n");
 		rc = -EINVAL;
+		goto out;
 	}
 	memcpy(buf, req->fw->data, req->fw->size);
 

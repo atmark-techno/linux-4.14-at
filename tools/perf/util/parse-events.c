@@ -202,8 +202,8 @@ struct tracepoint_path *tracepoint_id_to_path(u64 config)
 
 		for_each_event(sys_dirent, evt_dir, evt_dirent) {
 
-			snprintf(evt_path, MAXPATHLEN, "%s/%s/id", dir_path,
-				 evt_dirent->d_name);
+			scnprintf(evt_path, MAXPATHLEN, "%s/%s/id", dir_path,
+				  evt_dirent->d_name);
 			fd = open(evt_path, O_RDONLY);
 			if (fd < 0)
 				continue;
@@ -1115,6 +1115,7 @@ do {								\
 	INIT_LIST_HEAD(&__t->list);				\
 	__t->type       = PERF_EVSEL__CONFIG_TERM_ ## __type;	\
 	__t->val.__name = __val;				\
+	__t->weak	= term->weak;				\
 	list_add_tail(&__t->list, head_terms);			\
 } while (0)
 
@@ -2395,6 +2396,7 @@ static int new_term(struct parse_events_term **_term,
 
 	*term = *temp;
 	INIT_LIST_HEAD(&term->list);
+	term->weak = false;
 
 	switch (term->type_val) {
 	case PARSE_EVENTS__TERM_TYPE_NUM:

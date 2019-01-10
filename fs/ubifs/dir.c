@@ -1147,8 +1147,7 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
 	struct ubifs_inode *ui;
 	struct ubifs_inode *dir_ui = ubifs_inode(dir);
 	struct ubifs_info *c = dir->i_sb->s_fs_info;
-	int err, len = strlen(symname);
-	int sz_change = CALC_DENT_SIZE(len);
+	int err, sz_change, len = strlen(symname);
 	struct fscrypt_str disk_link = FSTR_INIT((char *)symname, len + 1);
 	struct fscrypt_symlink_data *sd = NULL;
 	struct ubifs_budget_req req = { .new_ino = 1, .new_dent = 1,
@@ -1189,6 +1188,8 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
 	if (err)
 		goto out_budg;
 
+	sz_change = CALC_DENT_SIZE(fname_len(&nm));
+
 	inode = ubifs_new_inode(c, dir, S_IFLNK | S_IRWXUGO);
 	if (IS_ERR(inode)) {
 		err = PTR_ERR(inode);
@@ -1216,10 +1217,8 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
 		ostr.len = disk_link.len;
 
 		err = fscrypt_fname_usr_to_disk(inode, &istr, &ostr);
-		if (err) {
-			kfree(sd);
+		if (err)
 			goto out_inode;
-		}
 
 		sd->len = cpu_to_le16(ostr.len);
 		disk_link.name = (char *)sd;
@@ -1251,11 +1250,10 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
 		goto out_cancel;
 	mutex_unlock(&dir_ui->ui_mutex);
 
-	ubifs_release_budget(c, &req);
 	insert_inode_hash(inode);
 	d_instantiate(dentry, inode);
-	fscrypt_free_filename(&nm);
-	return 0;
+	err = 0;
+	goto out_fname;
 
 out_cancel:
 	dir->i_size -= sz_change;
@@ -1268,6 +1266,7 @@ out_fname:
 	fscrypt_free_filename(&nm);
 out_budg:
 	ubifs_release_budget(c, &req);
+	kfree(sd);
 	return err;
 }
 

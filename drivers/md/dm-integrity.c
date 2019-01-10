@@ -177,7 +177,7 @@ struct dm_integrity_c {
 	__u8 sectors_per_block;
 
 	unsigned char mode;
-	bool suspending;
+	int suspending;
 
 	int failed;
 
@@ -2209,7 +2209,7 @@ static void dm_integrity_postsuspend(struct dm_target *ti)
 
 	del_timer_sync(&ic->autocommit_timer);
 
-	ic->suspending = true;
+	WRITE_ONCE(ic->suspending, 1);
 
 	queue_work(ic->commit_wq, &ic->commit_work);
 	drain_workqueue(ic->commit_wq);
@@ -2219,7 +2219,7 @@ static void dm_integrity_postsuspend(struct dm_target *ti)
 		dm_integrity_flush_buffers(ic);
 	}
 
-	ic->suspending = false;
+	WRITE_ONCE(ic->suspending, 0);
 
 	BUG_ON(!RB_EMPTY_ROOT(&ic->in_progress));
 
@@ -2439,7 +2439,7 @@ static void dm_integrity_free_journal_scatterlist(struct dm_integrity_c *ic, str
 	unsigned i;
 	for (i = 0; i < ic->journal_sections; i++)
 		kvfree(sl[i]);
-	kfree(sl);
+	kvfree(sl);
 }
 
 static struct scatterlist **dm_integrity_alloc_journal_scatterlist(struct dm_integrity_c *ic, struct page_list *pl)
@@ -2547,6 +2547,9 @@ static int get_mac(struct crypto_shash **hash, struct alg_spec *a, char **error,
 				*error = error_key;
 				return r;
 			}
+		} else if (crypto_shash_get_flags(*hash) & CRYPTO_TFM_NEED_KEY) {
+			*error = error_key;
+			return -ENOKEY;
 		}
 	}
 
@@ -2558,7 +2561,8 @@ static int create_journal(struct dm_integrity_c *ic, char **error)
 	int r = 0;
 	unsigned i;
 	__u64 journal_pages, journal_desc_size, journal_tree_size;
-	unsigned char *crypt_data = NULL;
+	unsigned char *crypt_data = NULL, *crypt_iv = NULL;
+	struct skcipher_request *req = NULL;
 
 	ic->commit_ids[0] = cpu_to_le64(0x1111111111111111ULL);
 	ic->commit_ids[1] = cpu_to_le64(0x2222222222222222ULL);
@@ -2616,9 +2620,20 @@ static int create_journal(struct dm_integrity_c *ic, char **error)
 
 		if (blocksize == 1) {
 			struct scatterlist *sg;
-			SKCIPHER_REQUEST_ON_STACK(req, ic->journal_crypt);
-			unsigned char iv[ivsize];
-			skcipher_request_set_tfm(req, ic->journal_crypt);
+
+			req = skcipher_request_alloc(ic->journal_crypt, GFP_KERNEL);
+			if (!req) {
+				*error = "Could not allocate crypt request";
+				r = -ENOMEM;
+				goto bad;
+			}
+
+			crypt_iv = kmalloc(ivsize, GFP_KERNEL);
+			if (!crypt_iv) {
+				*error = "Could not allocate iv";
+				r = -ENOMEM;
+				goto bad;
+			}
 
 			ic->journal_xor = dm_integrity_alloc_page_list(ic);
 			if (!ic->journal_xor) {
@@ -2640,9 +2655,9 @@ static int create_journal(struct dm_integrity_c *ic, char **error)
 				sg_set_buf(&sg[i], va, PAGE_SIZE);
 			}
 			sg_set_buf(&sg[i], &ic->commit_ids, sizeof ic->commit_ids);
-			memset(iv, 0x00, ivsize);
+			memset(crypt_iv, 0x00, ivsize);
 
-			skcipher_request_set_crypt(req, sg, sg, PAGE_SIZE * ic->journal_pages + sizeof ic->commit_ids, iv);
+			skcipher_request_set_crypt(req, sg, sg, PAGE_SIZE * ic->journal_pages + sizeof ic->commit_ids, crypt_iv);
 			init_completion(&comp.comp);
 			comp.in_flight = (atomic_t)ATOMIC_INIT(1);
 			if (do_crypt(true, req, &comp))
@@ -2658,9 +2673,21 @@ static int create_journal(struct dm_integrity_c *ic, char **error)
 			crypto_free_skcipher(ic->journal_crypt);
 			ic->journal_crypt = NULL;
 		} else {
-			SKCIPHER_REQUEST_ON_STACK(req, ic->journal_crypt);
-			unsigned char iv[ivsize];
 			unsigned crypt_len = roundup(ivsize, blocksize);
+
+			req = skcipher_request_alloc(ic->journal_crypt, GFP_KERNEL);
+			if (!req) {
+				*error = "Could not allocate crypt request";
+				r = -ENOMEM;
+				goto bad;
+			}
+
+			crypt_iv = kmalloc(ivsize, GFP_KERNEL);
+			if (!crypt_iv) {
+				*error = "Could not allocate iv";
+				r = -ENOMEM;
+				goto bad;
+			}
 
 			crypt_data = kmalloc(crypt_len, GFP_KERNEL);
 			if (!crypt_data) {
@@ -2668,8 +2695,6 @@ static int create_journal(struct dm_integrity_c *ic, char **error)
 				r = -ENOMEM;
 				goto bad;
 			}
-
-			skcipher_request_set_tfm(req, ic->journal_crypt);
 
 			ic->journal_scatterlist = dm_integrity_alloc_journal_scatterlist(ic, ic->journal);
 			if (!ic->journal_scatterlist) {
@@ -2694,12 +2719,12 @@ static int create_journal(struct dm_integrity_c *ic, char **error)
 				struct skcipher_request *section_req;
 				__u32 section_le = cpu_to_le32(i);
 
-				memset(iv, 0x00, ivsize);
+				memset(crypt_iv, 0x00, ivsize);
 				memset(crypt_data, 0x00, crypt_len);
 				memcpy(crypt_data, &section_le, min((size_t)crypt_len, sizeof(section_le)));
 
 				sg_init_one(&sg, crypt_data, crypt_len);
-				skcipher_request_set_crypt(req, &sg, &sg, crypt_len, iv);
+				skcipher_request_set_crypt(req, &sg, &sg, crypt_len, crypt_iv);
 				init_completion(&comp.comp);
 				comp.in_flight = (atomic_t)ATOMIC_INIT(1);
 				if (do_crypt(true, req, &comp))
@@ -2757,6 +2782,9 @@ retest_commit_id:
 	}
 bad:
 	kfree(crypt_data);
+	kfree(crypt_iv);
+	skcipher_request_free(req);
+
 	return r;
 }
 

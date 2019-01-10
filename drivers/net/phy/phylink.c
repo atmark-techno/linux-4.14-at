@@ -525,6 +525,7 @@ struct phylink *phylink_create(struct net_device *ndev, struct device_node *np,
 	pl->link_config.pause = MLO_PAUSE_AN;
 	pl->link_config.speed = SPEED_UNKNOWN;
 	pl->link_config.duplex = DUPLEX_UNKNOWN;
+	pl->link_config.an_enabled = true;
 	pl->ops = ops;
 	__set_bit(PHYLINK_DISABLE_STOPPED, &pl->phylink_disable_state);
 
@@ -560,6 +561,8 @@ void phylink_destroy(struct phylink *pl)
 {
 	if (pl->sfp_bus)
 		sfp_unregister_upstream(pl->sfp_bus);
+	if (!IS_ERR_OR_NULL(pl->link_gpio))
+		gpiod_put(pl->link_gpio);
 
 	cancel_work_sync(&pl->resolve);
 	kfree(pl);
@@ -744,6 +747,9 @@ void phylink_start(struct phylink *pl)
 		    phylink_an_mode_str(pl->link_an_mode),
 		    phy_modes(pl->link_config.interface));
 
+	/* Always set the carrier off */
+	netif_carrier_off(pl->netdev);
+
 	/* Apply the link configuration to the MAC when starting. This allows
 	 * a fixed-link to start with the correct parameters, and also
 	 * ensures that we set the appropriate advertisment for Serdes links.
@@ -771,6 +777,7 @@ void phylink_stop(struct phylink *pl)
 		sfp_upstream_stop(pl->sfp_bus);
 
 	set_bit(PHYLINK_DISABLE_STOPPED, &pl->phylink_disable_state);
+	queue_work(system_power_efficient_wq, &pl->resolve);
 	flush_work(&pl->resolve);
 }
 EXPORT_SYMBOL_GPL(phylink_stop);
@@ -948,6 +955,7 @@ int phylink_ethtool_ksettings_set(struct phylink *pl,
 	mutex_lock(&pl->state_mutex);
 	/* Configure the MAC to match the new settings */
 	linkmode_copy(pl->link_config.advertising, our_kset.link_modes.advertising);
+	pl->link_config.interface = config.interface;
 	pl->link_config.speed = our_kset.base.speed;
 	pl->link_config.duplex = our_kset.base.duplex;
 	pl->link_config.an_enabled = our_kset.base.autoneg != AUTONEG_DISABLE;
@@ -1426,9 +1434,8 @@ static void phylink_sfp_link_down(void *upstream)
 	WARN_ON(!lockdep_rtnl_is_held());
 
 	set_bit(PHYLINK_DISABLE_LINK, &pl->phylink_disable_state);
+	queue_work(system_power_efficient_wq, &pl->resolve);
 	flush_work(&pl->resolve);
-
-	netif_carrier_off(pl->netdev);
 }
 
 static void phylink_sfp_link_up(void *upstream)

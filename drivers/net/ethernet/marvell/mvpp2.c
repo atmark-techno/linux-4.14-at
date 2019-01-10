@@ -33,6 +33,7 @@
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
 #include <linux/regmap.h>
+#include <linux/if_vlan.h>
 #include <uapi/linux/ppp_defs.h>
 #include <net/ip.h>
 #include <net/ipv6.h>
@@ -4552,11 +4553,6 @@ static void mvpp2_port_mii_gmac_configure_mode(struct mvpp2_port *port)
 		       MVPP22_CTRL4_QSGMII_BYPASS_ACTIVE;
 		val &= ~MVPP22_CTRL4_EXT_PIN_GMII_SEL;
 		writel(val, port->base + MVPP22_GMAC_CTRL_4_REG);
-
-		val = readl(port->base + MVPP2_GMAC_CTRL_2_REG);
-		val |= MVPP2_GMAC_DISABLE_PADDING;
-		val &= ~MVPP2_GMAC_FLOW_CTRL_MASK;
-		writel(val, port->base + MVPP2_GMAC_CTRL_2_REG);
 	} else if (phy_interface_mode_is_rgmii(port->phy_interface)) {
 		val = readl(port->base + MVPP22_GMAC_CTRL_4_REG);
 		val |= MVPP22_CTRL4_EXT_PIN_GMII_SEL |
@@ -4564,10 +4560,6 @@ static void mvpp2_port_mii_gmac_configure_mode(struct mvpp2_port *port)
 		       MVPP22_CTRL4_QSGMII_BYPASS_ACTIVE;
 		val &= ~MVPP22_CTRL4_DP_CLK_SEL;
 		writel(val, port->base + MVPP22_GMAC_CTRL_4_REG);
-
-		val = readl(port->base + MVPP2_GMAC_CTRL_2_REG);
-		val &= ~MVPP2_GMAC_DISABLE_PADDING;
-		writel(val, port->base + MVPP2_GMAC_CTRL_2_REG);
 	}
 
 	/* The port is connected to a copper PHY */
@@ -5110,7 +5102,7 @@ static void mvpp2_txq_desc_put(struct mvpp2_tx_queue *txq)
 }
 
 /* Set Tx descriptors fields relevant for CSUM calculation */
-static u32 mvpp2_txq_desc_csum(int l3_offs, int l3_proto,
+static u32 mvpp2_txq_desc_csum(int l3_offs, __be16 l3_proto,
 			       int ip_hdr_len, int l4_proto)
 {
 	u32 command;
@@ -5408,7 +5400,7 @@ static int mvpp2_aggr_txq_init(struct platform_device *pdev,
 	u32 txq_dma;
 
 	/* Allocate memory for TX descriptors */
-	aggr_txq->descs = dma_alloc_coherent(&pdev->dev,
+	aggr_txq->descs = dma_zalloc_coherent(&pdev->dev,
 				MVPP2_AGGR_TXQ_SIZE * MVPP2_DESC_ALIGNED_SIZE,
 				&aggr_txq->descs_dma, GFP_KERNEL);
 	if (!aggr_txq->descs)
@@ -5606,7 +5598,7 @@ static int mvpp2_txq_init(struct mvpp2_port *port,
 						sizeof(*txq_pcpu->buffs),
 						GFP_KERNEL);
 		if (!txq_pcpu->buffs)
-			goto cleanup;
+			return -ENOMEM;
 
 		txq_pcpu->count = 0;
 		txq_pcpu->reserved_num = 0;
@@ -5619,26 +5611,10 @@ static int mvpp2_txq_init(struct mvpp2_port *port,
 					   &txq_pcpu->tso_headers_dma,
 					   GFP_KERNEL);
 		if (!txq_pcpu->tso_headers)
-			goto cleanup;
+			return -ENOMEM;
 	}
 
 	return 0;
-cleanup:
-	for_each_present_cpu(cpu) {
-		txq_pcpu = per_cpu_ptr(txq->pcpu, cpu);
-		kfree(txq_pcpu->buffs);
-
-		dma_free_coherent(port->dev->dev.parent,
-				  txq_pcpu->size * TSO_HEADER_SIZE,
-				  txq_pcpu->tso_headers,
-				  txq_pcpu->tso_headers_dma);
-	}
-
-	dma_free_coherent(port->dev->dev.parent,
-			  txq->size * MVPP2_DESC_ALIGNED_SIZE,
-			  txq->descs, txq->descs_dma);
-
-	return -ENOMEM;
 }
 
 /* Free allocated TXQ resources */
@@ -6090,14 +6066,15 @@ static u32 mvpp2_skb_tx_csum(struct mvpp2_port *port, struct sk_buff *skb)
 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
 		int ip_hdr_len = 0;
 		u8 l4_proto;
+		__be16 l3_proto = vlan_get_protocol(skb);
 
-		if (skb->protocol == htons(ETH_P_IP)) {
+		if (l3_proto == htons(ETH_P_IP)) {
 			struct iphdr *ip4h = ip_hdr(skb);
 
 			/* Calculate IPv4 checksum and L4 checksum */
 			ip_hdr_len = ip4h->ihl;
 			l4_proto = ip4h->protocol;
-		} else if (skb->protocol == htons(ETH_P_IPV6)) {
+		} else if (l3_proto == htons(ETH_P_IPV6)) {
 			struct ipv6hdr *ip6h = ipv6_hdr(skb);
 
 			/* Read l4_protocol from one of IPv6 extra headers */
@@ -6109,7 +6086,7 @@ static u32 mvpp2_skb_tx_csum(struct mvpp2_port *port, struct sk_buff *skb)
 		}
 
 		return mvpp2_txq_desc_csum(skb_network_offset(skb),
-				skb->protocol, ip_hdr_len, l4_proto);
+					   l3_proto, ip_hdr_len, l4_proto);
 	}
 
 	return MVPP2_TXD_L4_CSUM_NOT | MVPP2_TXD_IP_CSUM_DISABLE;
@@ -6557,10 +6534,12 @@ static int mvpp2_poll(struct napi_struct *napi, int budget)
 				   cause_rx_tx & ~MVPP2_CAUSE_MISC_SUM_MASK);
 	}
 
-	cause_tx = cause_rx_tx & MVPP2_CAUSE_TXQ_OCCUP_DESC_ALL_MASK;
-	if (cause_tx) {
-		cause_tx >>= MVPP2_CAUSE_TXQ_OCCUP_DESC_ALL_OFFSET;
-		mvpp2_tx_done(port, cause_tx, qv->sw_thread_id);
+	if (port->has_tx_irqs) {
+		cause_tx = cause_rx_tx & MVPP2_CAUSE_TXQ_OCCUP_DESC_ALL_MASK;
+		if (cause_tx) {
+			cause_tx >>= MVPP2_CAUSE_TXQ_OCCUP_DESC_ALL_OFFSET;
+			mvpp2_tx_done(port, cause_tx, qv->sw_thread_id);
+		}
 	}
 
 	/* Process RX packets */
@@ -6913,6 +6892,7 @@ static void mvpp2_set_rx_mode(struct net_device *dev)
 	int id = port->id;
 	bool allmulti = dev->flags & IFF_ALLMULTI;
 
+retry:
 	mvpp2_prs_mac_promisc_set(priv, id, dev->flags & IFF_PROMISC);
 	mvpp2_prs_mac_multi_set(priv, id, MVPP2_PE_MAC_MC_ALL, allmulti);
 	mvpp2_prs_mac_multi_set(priv, id, MVPP2_PE_MAC_MC_IP6, allmulti);
@@ -6920,9 +6900,13 @@ static void mvpp2_set_rx_mode(struct net_device *dev)
 	/* Remove all port->id's mcast enries */
 	mvpp2_prs_mcast_del_all(priv, id);
 
-	if (allmulti && !netdev_mc_empty(dev)) {
-		netdev_for_each_mc_addr(ha, dev)
-			mvpp2_prs_mac_da_accept(priv, id, ha->addr, true);
+	if (!allmulti) {
+		netdev_for_each_mc_addr(ha, dev) {
+			if (mvpp2_prs_mac_da_accept(priv, id, ha->addr, true)) {
+				allmulti = true;
+				goto retry;
+			}
+		}
 	}
 }
 

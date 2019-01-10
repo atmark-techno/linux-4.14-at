@@ -216,7 +216,7 @@ int rsnd_adg_set_cmd_timsel_gen2(struct rsnd_mod *cmd_mod,
 				   NULL, &val, NULL);
 
 	val  = val	<< shift;
-	mask = 0xffff	<< shift;
+	mask = 0x0f1f	<< shift;
 
 	rsnd_mod_bset(adg_mod, CMDOUT_TIMSEL, mask, val);
 
@@ -244,7 +244,7 @@ int rsnd_adg_set_src_timesel_gen2(struct rsnd_mod *src_mod,
 
 	in   = in	<< shift;
 	out  = out	<< shift;
-	mask = 0xffff	<< shift;
+	mask = 0x0f1f	<< shift;
 
 	switch (id / 2) {
 	case 0:
@@ -374,7 +374,7 @@ int rsnd_adg_ssi_clk_try_start(struct rsnd_mod *ssi_mod, unsigned int rate)
 			ckr = 0x80000000;
 	}
 
-	rsnd_mod_bset(adg_mod, BRGCKR, 0x80FF0000, adg->ckr | ckr);
+	rsnd_mod_bset(adg_mod, BRGCKR, 0x80770000, adg->ckr | ckr);
 	rsnd_mod_write(adg_mod, BRRA,  adg->rbga);
 	rsnd_mod_write(adg_mod, BRRB,  adg->rbgb);
 
@@ -467,6 +467,11 @@ static void rsnd_adg_get_clkout(struct rsnd_priv *priv,
 		goto rsnd_adg_get_clkout_end;
 
 	req_size = prop->length / sizeof(u32);
+	if (req_size > REQ_SIZE) {
+		dev_err(dev,
+			"too many clock-frequency, use top %d\n", REQ_SIZE);
+		req_size = REQ_SIZE;
+	}
 
 	of_property_read_u32_array(np, "clock-frequency", req_rate, req_size);
 	req_48kHz_rate = 0;
@@ -479,10 +484,10 @@ static void rsnd_adg_get_clkout(struct rsnd_priv *priv,
 	}
 
 	if (req_rate[0] % 48000 == 0)
-		adg->flags = AUDIO_OUT_48;
+		adg->flags |= AUDIO_OUT_48;
 
 	if (of_get_property(np, "clkout-lr-asynchronous", NULL))
-		adg->flags = LRCLK_ASYNC;
+		adg->flags |= LRCLK_ASYNC;
 
 	/*
 	 * This driver is assuming that AUDIO_CLKA/AUDIO_CLKB/AUDIO_CLKC

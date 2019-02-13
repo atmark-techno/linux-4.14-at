@@ -380,14 +380,9 @@ static void imx_rs485_transmitter_disable(struct imx_port *sport, unsigned long 
 }
 
 static void imx_dma_tx(struct imx_port *sport);
-static enum hrtimer_restart imx_rs485_before_send(struct hrtimer *timer)
+static void imx_rs485_start_tx(struct imx_port *sport)
 {
-	struct imx_port *sport = container_of(timer, struct imx_port,
-					      rs485_before_send);
 	unsigned long temp;
-	unsigned long flags;
-
-	spin_lock_irqsave(&sport->port.lock, flags);
 
 	if (!sport->dma_is_enabled) {
 		/* enable transmitter and shifter empty irq */
@@ -407,15 +402,23 @@ static enum hrtimer_restart imx_rs485_before_send(struct hrtimer *timer)
 			temp &= ~UCR1_TDMAEN;
 			temp |= UCR1_TXMPTYEN;
 			writel(temp, sport->port.membase + UCR1);
-			goto out;
+			return;
 		}
 
 		if (!uart_circ_empty(&sport->port.state->xmit) &&
 		    !uart_tx_stopped(&sport->port))
 			imx_dma_tx(sport);
 	}
+}
 
-out:
+static enum hrtimer_restart imx_rs485_before_send(struct hrtimer *timer)
+{
+	struct imx_port *sport = container_of(timer, struct imx_port,
+					      rs485_before_send);
+	unsigned long flags;
+
+	spin_lock_irqsave(&sport->port.lock, flags);
+	imx_rs485_start_tx(sport);
 	spin_unlock_irqrestore(&sport->port.lock, flags);
 
 	return HRTIMER_NORESTART;
@@ -473,8 +476,14 @@ static void imx_stop_tx(struct uart_port *port)
 		temp &= ~UCR4_TCEN;
 		writel(temp, port->membase + UCR4);
 
-		imx_rs485_hrtimer_start(&sport->rs485_after_send,
-					port->rs485.delay_rts_after_send);
+		if (port->rs485.delay_rts_after_send)
+			imx_rs485_hrtimer_start(&sport->rs485_after_send,
+						port->rs485.delay_rts_after_send);
+		else {
+			temp = readl(sport->port.membase + UCR2);
+			imx_rs485_transmitter_disable(sport, &temp);
+			writel(temp, sport->port.membase + UCR2);
+		}
 	}
 }
 
@@ -684,8 +693,11 @@ static void imx_start_tx(struct uart_port *port)
 		imx_rs485_transmitter_enable(sport, &temp);
 		writel(temp, port->membase + UCR2);
 
-		imx_rs485_hrtimer_start(&sport->rs485_before_send,
-					port->rs485.delay_rts_before_send);
+		if (port->rs485.delay_rts_before_send)
+			imx_rs485_hrtimer_start(&sport->rs485_before_send,
+						port->rs485.delay_rts_before_send);
+		else
+			imx_rs485_start_tx(sport);
 		return;
 	}
 

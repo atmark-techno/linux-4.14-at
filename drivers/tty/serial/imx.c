@@ -1007,7 +1007,8 @@ static void imx_set_mctrl(struct uart_port *port, unsigned int mctrl)
 		temp |= UTS_LOOP;
 	writel(temp, sport->port.membase + uts_reg(sport));
 
-	mctrl_gpio_set(sport->gpios, mctrl);
+	if (!(port->rs485.flags & SER_RS485_ENABLED))
+		mctrl_gpio_set(sport->gpios, mctrl);
 }
 
 /*

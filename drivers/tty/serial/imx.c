@@ -357,6 +357,28 @@ static void imx_port_rts_auto(struct imx_port *sport, unsigned long *ucr2)
 	*ucr2 |= UCR2_CTSC;
 }
 
+static void imx_rs485_transmitter_enable(struct imx_port *sport, unsigned long *ucr2)
+{
+	if (sport->port.rs485.flags & SER_RS485_RTS_ON_SEND)
+		imx_port_rts_active(sport, ucr2);
+	else
+		imx_port_rts_inactive(sport, ucr2);
+
+	if (!(sport->port.rs485.flags & SER_RS485_RX_DURING_TX))
+		*ucr2 &= ~UCR2_RXEN;
+}
+
+static void imx_rs485_transmitter_disable(struct imx_port *sport, unsigned long *ucr2)
+{
+	if (sport->port.rs485.flags & SER_RS485_RTS_AFTER_SEND)
+		imx_port_rts_active(sport, ucr2);
+	else
+		imx_port_rts_inactive(sport, ucr2);
+
+	if (!(sport->port.rs485.flags & SER_RS485_RX_DURING_TX))
+		*ucr2 |= UCR2_RXEN;
+}
+
 static void imx_dma_tx(struct imx_port *sport);
 static enum hrtimer_restart imx_rs485_before_send(struct hrtimer *timer)
 {
@@ -412,11 +434,7 @@ static enum hrtimer_restart imx_rs485_after_send(struct hrtimer *timer)
 		goto out;
 
 	temp = readl(sport->port.membase + UCR2);
-	if (sport->port.rs485.flags & SER_RS485_RTS_AFTER_SEND)
-		imx_port_rts_active(sport, &temp);
-	else
-		imx_port_rts_inactive(sport, &temp);
-	temp |= UCR2_RXEN;
+	imx_rs485_transmitter_disable(sport, &temp);
 	writel(temp, sport->port.membase + UCR2);
 
 out:
@@ -663,12 +681,7 @@ static void imx_start_tx(struct uart_port *port)
 
 	if (port->rs485.flags & SER_RS485_ENABLED) {
 		temp = readl(port->membase + UCR2);
-		if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
-			imx_port_rts_active(sport, &temp);
-		else
-			imx_port_rts_inactive(sport, &temp);
-		if (!(port->rs485.flags & SER_RS485_RX_DURING_TX))
-			temp &= ~UCR2_RXEN;
+		imx_rs485_transmitter_enable(sport, &temp);
 		writel(temp, port->membase + UCR2);
 
 		imx_rs485_hrtimer_start(&sport->rs485_before_send,
@@ -1570,11 +1583,7 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
 				 * it under manual control and keep transmitter
 				 * disabled.
 				 */
-				if (port->rs485.flags &
-				    SER_RS485_RTS_AFTER_SEND)
-					imx_port_rts_active(sport, &ucr2);
-				else
-					imx_port_rts_inactive(sport, &ucr2);
+				imx_rs485_transmitter_disable(sport, &ucr2);
 			} else {
 				imx_port_rts_auto(sport, &ucr2);
 			}
@@ -1583,10 +1592,7 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
 		}
 	} else if (port->rs485.flags & SER_RS485_ENABLED) {
 		/* disable transmitter */
-		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
-			imx_port_rts_active(sport, &ucr2);
-		else
-			imx_port_rts_inactive(sport, &ucr2);
+		imx_rs485_transmitter_disable(sport, &ucr2);
 	}
 
 
@@ -1821,10 +1827,7 @@ static int imx_rs485_config(struct uart_port *port,
 	if (rs485conf->flags & SER_RS485_ENABLED) {
 		/* disable transmitter */
 		temp = readl(sport->port.membase + UCR2);
-		if (rs485conf->flags & SER_RS485_RTS_AFTER_SEND)
-			imx_port_rts_active(sport, &temp);
-		else
-			imx_port_rts_inactive(sport, &temp);
+		imx_rs485_transmitter_disable(sport, &temp);
 		writel(temp, sport->port.membase + UCR2);
 	}
 

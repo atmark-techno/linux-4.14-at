@@ -525,6 +525,9 @@ static int s35390a_probe(struct i2c_client *client,
 	if (status1 & S35390A_FLAG_INT2)
 		rtc_update_irq(s35390a->rtc, 1, RTC_AF);
 
+	/* the s35390a alarm only supports a minute accuracy */
+	s35390a->rtc->uie_unsupported = 1;
+
 	return 0;
 
 exit_dummy:

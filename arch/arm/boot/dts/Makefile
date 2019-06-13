@@ -486,6 +486,7 @@ dtb-$(CONFIG_SOC_IMX6UL) += \
 	imx6ull-14x14-evk.dtb \
 	armadillo-640.dtb \
 	armadillo-640_con9_awl13_rtc.dtb \
+	armadillo-640_con9_thread.dtb \
 	armadillo-640-at-dtweb.dtb
 dtb-$(CONFIG_SOC_IMX7D) += \
 	imx7d-cl-som-imx7.dtb \

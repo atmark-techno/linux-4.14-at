@@ -168,14 +168,14 @@
 &i2c1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c1>;
-	clock_frequency = <400000>;
+	clock-frequency = <400000>;
 	status = "okay";
 };
 
 &i2c2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c2>;
-	clock_frequency = <400000>;
+	clock-frequency = <400000>;
 	status = "okay";
 };
 

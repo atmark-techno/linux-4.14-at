@@ -1,0 +1,130 @@
+/*
+ * Copyright (C) 2019 Atmark Techno, Inc. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: (GPL-2.0 OR MIT)
+ */
+
+/dts-v1/;
+
+#define ARMADILLO640_AT_DTWEB
+#include "armadillo-640.dts"
+
+/ {
+	chosen {
+		stdout-path = &uart3;
+	};
+
+	wlan_pwren_reset: awlan-reset {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wlan_pwren>;
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio3 25 GPIO_ACTIVE_HIGH>;
+
+		/* awl13 needs time for power discharging that takes 500 msec */
+		reset-delay-us = <500000>;
+
+		reset-on-init;
+		#reset-cells = <0>;
+	};
+
+	hub_reset_b_reset: usb2422-reset {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_hub_reset_b>;
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio1 30 GPIO_ACTIVE_LOW>;
+
+		reset-delay-us = <1>;
+
+		reset-on-init;
+		#reset-cells = <0>;
+	};
+
+	ble_reset: nrf52-reset {
+		compatible = "gpio-reset";
+		pinctrl-0 = <&pinctrl_ble_reset>;
+		reset-gpios = <&gpio3 26 GPIO_ACTIVE_HIGH>;
+
+		reset-delay-us = <1>;
+
+		reset-on-init;
+		#reset-cells = <0>;
+	};
+
+	reg_ble_pwr_en: regulator-nrf52 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_ble_pwr_en>;
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_NRF52";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio3 27 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	se_rst_n_reset: a71ch-reset {
+		compatible = "gpio-reset";
+		pinctrl-0 = <&pinctrl_se_rst_n>;
+		reset-gpios = <&gpio3 28 GPIO_ACTIVE_LOW>;
+
+		reset-delay-us = <40>;
+
+		reset-on-init;
+		#reset-cells = <0>;
+	};
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+
+	pinctrl_expansion_interfacehog: expansion_interfacehoggrp {
+		fsl,pins = <
+			MX6UL_PAD_UART2_RTS_B__GPIO1_IO23	0x40000008	/* SWDCLK */
+			MX6UL_PAD_UART5_RX_DATA__GPIO1_IO31	0x40010008	/* SWDIO */
+		>;
+	};
+
+	pinctrl_wlan_pwren: wlanpwrengrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA20__GPIO3_IO25	0x40000008	/* WLAN_PWREN */
+		>;
+	};
+
+	pinctrl_hub_reset_b: hubresetbgrp {
+		fsl,pins = <
+			MX6UL_PAD_UART5_TX_DATA__GPIO1_IO30	0x00000008	/* HUB_RESET_B */
+		>;
+	};
+
+	pinctrl_ble_reset: bleresetgrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA21__GPIO3_IO26	0x00000008	/* BLE_RESET */
+		>;
+	};
+
+	pinctrl_ble_pwr_en: blepwrengrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA22__GPIO3_IO27	0x00000008	/* BLE_PWR_EN */
+		>;
+	};
+
+	pinctrl_se_rst_n: serstngrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA23__GPIO3_IO28	0x00000008	/* SE_RST_N */
+		>;
+	};
+
+	pinctrl_i2c4: i2c4grp {
+		fsl,pins = <
+			MX6UL_PAD_UART2_TX_DATA__I2C4_SCL	0x40010808
+			MX6UL_PAD_UART2_RX_DATA__I2C4_SDA	0x40010808
+		>;
+	};
+};
+
+&i2c4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c4>;
+	clock_frequency = <100000>;
+	status = "okay";
+};

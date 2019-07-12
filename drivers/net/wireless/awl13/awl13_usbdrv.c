@@ -29,7 +29,6 @@
 #include <linux/workqueue.h>
 #include <linux/mii.h>
 #include <linux/usb.h>
-#include <generated/compile.h>
 #ifdef AWL13_HOTPLUG_FIRMWARE
 #include <linux/firmware.h>
 #endif /* AWL13_HOTPLUG_FIRMWARE */
@@ -1561,13 +1560,13 @@ awl13_last_init(struct awl13_usbnet *dev )
 	xdev = interface_to_usbdev (dev->intf);
 	priv->speed     = xdev->speed;
 
-	awl_info("Driver Version %s %s (%s)\n", AWL13_VERSION,
+	awl_info("Driver Version %s %s\n", AWL13_VERSION,
 #ifdef AWL13_HOTPLUG_FIRMWARE
-		 "hotplug",
+		 "hotplug"
 #else /* AWL13_HOTPLUG_FIRMWARE */
-		 "normal",
+		 "normal"
 #endif /* AWL13_HOTPLUG_FIRMWARE */
-		 UTS_VERSION);
+		 );
 
 	awl_info("    Endpoint   : DATA-BULK-OUT=%d, WID-BULK-OUT=%d, DATA-BULK-IN=%d, WID-BULK-IN=%d\n",
 		 dev->out, data->wid_bulk_out, dev->in, data->wid_bulk_in);

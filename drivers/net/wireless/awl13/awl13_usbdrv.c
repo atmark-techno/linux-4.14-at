@@ -2365,9 +2365,6 @@ awl13_usbnet_suspend(struct usb_interface *intf, pm_message_t message)
 			}
 	}
 
-	priv->probe_flags.do_task_quit = 1;
-	atomic_set(&priv->modstate, AWL13_MODSTATE_NONE);
-
 	return 0;
 }
 
@@ -2383,9 +2380,6 @@ awl13_usbnet_resume(struct usb_interface *intf)
 	struct awl13_private	*priv = data->priv;
 
 	awl_debug("%s() called\n", __func__);
-
-	atomic_set(&priv->modstate, AWL13_MODSTATE_EXIST);
-	priv->probe_flags.do_task_quit = 0;
 
 	awl13_create_thread(awl13_tx_thread, &priv->txthr, "awl13_txthr");
 

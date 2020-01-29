@@ -277,6 +277,9 @@ int pinctrl_dt_to_map(struct pinctrl *p, struct pinctrl_dev *pctldev)
 
 		/* No entries in DT? Generate a dummy state table entry */
 		if (!size) {
+			if (pctldev)
+				return -ENODEV;
+
 			ret = dt_remember_dummy_state(p, statename);
 			if (ret < 0)
 				goto err;

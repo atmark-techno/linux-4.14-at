@@ -487,7 +487,10 @@ dtb-$(CONFIG_SOC_IMX6UL) += \
 	armadillo-640.dtb \
 	armadillo-640_con9_awl13_rtc.dtb \
 	armadillo-640_con9_thread.dtb \
-	armadillo-640-at-dtweb.dtb
+	armadillo-640-at-dtweb.dtb \
+	armadillo-610-extboard-eva-grove.dtb \
+	armadillo-610-extboard-eva-lcd.dtb \
+	armadillo-610-at-dtweb.dtb
 dtb-$(CONFIG_SOC_IMX7D) += \
 	imx7d-cl-som-imx7.dtb \
 	imx7d-colibri-eval-v3.dtb \

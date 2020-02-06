@@ -1,0 +1,249 @@
+/*
+ * Copyright (C) 2020 Atmark Techno, Inc. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: (GPL-2.0 OR MIT)
+ */
+
+/ {
+	chosen {
+		stdout-path = &uart1;
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_keys>;
+
+		sw1 {
+			label = "SW1";
+			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_ENTER>;
+		};
+	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_leds>;
+
+		green {
+			label = "green";
+			gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "default-on";
+		};
+	};
+
+	regulators {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		reg_usbotg1_vbus: regulator-usbotg1vbus {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usbotg1_vbus>;
+			compatible = "regulator-fixed";
+			regulator-name = "USB_OTG1_VBUS";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			gpio = <&gpio1 19 GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+		};
+
+		reg_usbotg2_vbus: regulator-usbotg2vbus {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usbotg2_vbus>;
+			compatible = "regulator-fixed";
+			regulator-name = "USB_OTG2_VBUS";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			gpio = <&gpio4 17 GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+		};
+	};
+
+	vbus_sel: vbus-sel {
+		compatible = "imx6-vbus-sel";
+		otg1-vbus-reg-supply = <&reg_usbotg1_vbus>;
+
+		/* Workarounds for ERR010661 */
+		/* otg2-vbus-reg-supply = <&reg_usbotg2_vbus>; */
+	};
+
+	sound-mqs {
+		compatible = "fsl,imx6ul-ddr3-arm2-mqs",
+				"fsl,imx-audio-mqs";
+		model = "mqs-audio";
+		cpu-dai = <&sai1>;
+		asrc-controller = <&asrc>;
+		audio-codec = <&mqs>;
+	};
+
+	wlan_pwren_reset: awlan-reset {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_wlan_pwren>;
+		compatible = "gpio-reset";
+		reset-gpios = <&gpio1 25 GPIO_ACTIVE_LOW>;
+
+		/* awl13 needs time for power discharging that takes 500 msec */
+		reset-delay-us = <500000>;
+
+		reset-on-init;
+		#reset-cells = <0>;
+	};
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1>;
+	status = "okay";
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2>;
+	status = "okay";
+	fsl,uart-has-rtscts;
+	rts-gpios = <&gpio4 9 GPIO_ACTIVE_HIGH>;
+
+	rs485-enabled-at-boot-time;
+	rs485-rts-on-send;
+	rs485-delay-rts-before-send = <0>;
+	rs485-delay-rts-after-send = <0>;
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <
+			&pinctrl_gpio_amp
+			&pinctrl_gpio_con13b
+		    >;
+
+	pinctrl_wlan_pwren: wlanpwrengrp {
+		fsl,pins = <
+			MX6UL_PAD_UART3_RX_DATA__GPIO1_IO25 0x40000008
+		>;
+	};
+
+	pinctrl_mqs: mqsgrp {
+		fsl,pins = <
+			MX6UL_PAD_GPIO1_IO00__MQS_RIGHT 0x11088 // MQS
+		>;
+	};
+
+	pinctrl_gpio_amp: gpioampgrp {
+		fsl,pins = <
+			MX6UL_PAD_GPIO1_IO05__GPIO1_IO05 0x400010b0 // AMP_SD_B
+		>;
+	};
+
+	pinctrl_gpio_con13b: gpiocon13bgrp {
+		fsl,pins = <
+			MX6UL_PAD_UART2_TX_DATA__GPIO1_IO20 0x400010b0 // DI1
+			MX6UL_PAD_UART2_RX_DATA__GPIO1_IO21 0x400010b0 // DI2
+			MX6UL_PAD_UART5_TX_DATA__GPIO1_IO30 0x400010b0 // DO1
+			MX6UL_PAD_UART5_RX_DATA__GPIO1_IO31 0x400010b0 // DO2
+		>;
+	};
+
+	pinctrl_uart2: uart2grp {
+		fsl,pins = <
+			MX6UL_PAD_NAND_DATA04__UART2_DCE_TX	0x00008
+			MX6UL_PAD_NAND_DATA05__UART2_DCE_RX	0x1b0b1
+			MX6UL_PAD_NAND_DATA06__GPIO4_IO08	0x00008
+			MX6UL_PAD_NAND_DATA07__GPIO4_IO09	0x00008
+		>;
+	};
+
+	pinctrl_gpio_keys: gpiokeysgrp {
+		fsl,pins = <
+			MX6UL_PAD_JTAG_MOD__GPIO1_IO10     0x13080
+		>;
+	};
+
+	pinctrl_gpio_leds: gpioledsgrp {
+		fsl,pins = <
+			MX6UL_PAD_GPIO1_IO08__GPIO1_IO08   0x00008
+		>;
+	};
+
+	pinctrl_usbotg1: usbotg1grp {
+		fsl,pins = <
+			MX6UL_PAD_UART3_TX_DATA__ANATOP_OTG1_ID 0x17059
+		>;
+	};
+	
+	pinctrl_usbotg1_vbus: usbotg1vbusgrp {
+		fsl,pins = <
+			MX6UL_PAD_UART1_RTS_B__GPIO1_IO19  0x00008
+		>;
+	};
+
+	pinctrl_usbotg2_vbus: usbotg2vbusgrp {
+		fsl,pins = <
+			MX6UL_PAD_CSI_MCLK__GPIO4_IO17     0x00008
+		>;
+	};
+
+	pinctrl_uart1: uart1grp {
+		fsl,pins = <
+			MX6UL_PAD_UART1_TX_DATA__UART1_DCE_TX 0x00008
+			MX6UL_PAD_UART1_RX_DATA__UART1_DCE_RX 0x1b0b1
+		>;
+	};
+
+	pinctrl_sd2_vmmc: sd2vmmcgrp {
+		fsl,pins = <
+			MX6UL_PAD_UART2_RTS_B__GPIO1_IO23  0x00008
+		>;
+	};
+};
+
+&usbotg1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usbotg1>;
+	vbus-supply = <&reg_usbotg1_vbus>;
+	dr_mode = "otg";
+	disable-over-current;
+	status = "okay";
+};
+
+&usbotg2 {
+	vbus-supply = <&reg_usbotg2_vbus>;
+	dr_mode = "host";
+	disable-over-current;
+	status = "okay";
+};
+
+&usbphy2 {
+	fsl,tx-d-cal = <106>;
+};
+
+&clks {
+	assigned-clocks = <&clks IMX6UL_CLK_PLL4_AUDIO_DIV>;
+	assigned-clock-rates = <786432000>;
+};
+
+&sai1 {
+	assigned-clocks = <&clks IMX6UL_CLK_SAI1_SEL>,
+			  <&clks IMX6UL_CLK_SAI1>;
+	assigned-clock-parents = <&clks IMX6UL_CLK_PLL4_AUDIO_DIV>;
+	assigned-clock-rates = <0>, <24576000>;
+	status = "okay";
+};
+
+&mqs {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mqs>;
+	clocks = <&clks IMX6UL_CLK_SAI1>;
+	clock-names = "mclk";
+	status = "okay";
+};
+
+&gpio4 {
+	iso3086tdwr_re {
+		gpio-hog;
+		gpios = <8 GPIO_ACTIVE_HIGH>;
+		line-name = "ISO3086TDWR_RE";
+		output-low;
+	};
+};

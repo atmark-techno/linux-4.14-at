@@ -588,21 +588,21 @@
 //	dummy_prop_a = "dummy1";	// {{required-by-i2c2}} {{&i2c2/dummy_prop_a = "val"}}
 //	dummy_prop_b = "dummy4";	// {{required-by-i2c2}} {{&i2c2/dummy_prop_b = "val"}}
 //	pinctrl-0 = <&pinctrl_i2c2>;	// {{required-by-i2c2}} {{i2c2/pinctrl-0 = <val>}}
-//	clock_frequency = <100000>;	// {{required-by-i2c2}} {{i2c2/clock_frequency = <val>}}
+//	clock-frequency = <100000>;	// {{required-by-i2c2}} {{i2c2/clock-frequency = <val>}}
 //	status = "okay";		// {{required-by-i2c2}} {{i2c2/status = "val"}}
 //};					// {{required-by-i2c2}}
 
 //&i2c3 {				// {{required-by-i2c3}}
 //	pinctrl-names = "default";	// {{required-by-i2c3}} {{i2c3/pinctrl-names = "val"}}
 //	pinctrl-0 = <&pinctrl_i2c3>;	// {{required-by-i2c3}} {{i2c3/pinctrl-0 = <val>}}
-//	clock_frequency = <100000>;	// {{required-by-i2c3}} {{i2c3/clock_frequency = <val>}}
+//	clock-frequency = <100000>;	// {{required-by-i2c3}} {{i2c3/clock-frequency = <val>}}
 //	status = "okay";		// {{required-by-i2c3}} {{i2c3/status = "val"}}
 //};					// {{required-by-i2c3}}
 
 //&i2c4 {				// {{required-by-i2c4}}
 //	pinctrl-names = "default";	// {{required-by-i2c4}} {{i2c4/pinctrl-names = "val"}}
 //	pinctrl-0 = <&pinctrl_i2c4>;	// {{required-by-i2c4}} {{i2c4/pinctrl-0 = <val>}}
-//	clock_frequency = <100000>;	// {{required-by-i2c4}} {{i2c4/clock_frequency = <val>}}
+//	clock-frequency = <100000>;	// {{required-by-i2c4}} {{i2c4/clock-frequency = <val>}}
 //	status = "okay";		// {{required-by-i2c4}} {{i2c4/status = "val"}}
 //};					// {{required-by-i2c4}}
 

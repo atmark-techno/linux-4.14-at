@@ -66,7 +66,7 @@
 &i2c2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c2>;
-	clock_frequency = <100000>;
+	clock-frequency = <100000>;
 	status = "okay";
 
 	rtc_nr3225sa: rtc-nr3225sa {

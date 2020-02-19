@@ -1,0 +1,12 @@
+/*
+ * Copyright (C) 2020 Atmark Techno, Inc. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: (GPL-2.0 OR MIT)
+ */
+
+/dts-v1/;
+
+#define ARMADILLO610_AT_DTWEB
+#define ARMADILLO610_UNUSE_ONBOARD_USDHC2
+#include "armadillo-610.dtsi"
+#include "armadillo-610-expansion-interface.dtsi"

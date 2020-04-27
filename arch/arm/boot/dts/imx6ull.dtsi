@@ -44,6 +44,16 @@
 				reg = <0x02290000 0x4000>;
 			};
 
+			dcp: dcp@02280000 {
+				compatible = "fsl,imx6sl-dcp";
+				reg = <0x02280000 0x4000>;
+				interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>,
+					     <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>,
+					     <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
+				clocks = <&clks IMX6ULL_CLK_DCP_CLK>;
+				clock-names = "dcp";
+			};
+
 			uart8: serial@2288000 {
 				compatible = "fsl,imx6ul-uart",
 					     "fsl,imx6q-uart";

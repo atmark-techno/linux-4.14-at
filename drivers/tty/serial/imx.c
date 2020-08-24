@@ -644,8 +644,6 @@ static void dma_tx_callback(void *data)
 	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&sport->port))
 		imx_dma_tx(sport);
 	else if (sport->port.rs485.flags & SER_RS485_ENABLED) {
-		unsigned long temp;
-
 		/* enable transmitter and shifter empty irq */
 		temp = readl(sport->port.membase + UCR4);
 		temp |= UCR4_TCEN;
@@ -667,6 +665,10 @@ static void imx_dma_tx(struct imx_port *sport)
 
 	if (sport->dma_is_txing)
 		return;
+
+	temp = readl(sport->port.membase + UCR4);
+	temp &= ~UCR4_TCEN;
+	writel(temp, sport->port.membase + UCR4);
 
 	sport->tx_bytes = uart_circ_chars_pending(xmit);
 

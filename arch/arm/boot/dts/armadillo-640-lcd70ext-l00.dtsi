@@ -86,7 +86,7 @@
 
 		display-timings {
 			timing0: timing {
-				/* GT800X480A-1013R */
+				/* GT800X480A-1013P */
 				clock-frequency = <30600000>;
 				hactive = <800>;
 				vactive = <480>;

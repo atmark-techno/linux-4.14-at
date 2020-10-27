@@ -87,13 +87,13 @@
 		display-timings {
 			timing0: timing {
 				/* GT800X480A-1013P */
-				clock-frequency = <30600000>;
+				clock-frequency = <29232000>;
 				hactive = <800>;
 				vactive = <480>;
-				hback-porch = <32>;
-				hfront-porch = <13>;
-				vback-porch = <88>;
-				vfront-porch = <40>;
+				hback-porch = <40>; /* 88(Blanking) - 48(pulse width) */
+				hfront-porch = <40>;
+				vback-porch = <29>; /* 32(Blanking) - 3(pulse width) */
+				vfront-porch = <13>;
 				hsync-len = <48>;
 				vsync-len = <3>;
 				de-active = <1>;

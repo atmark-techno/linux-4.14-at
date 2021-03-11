@@ -1,0 +1,11 @@
+/*
+ * Copyright (C) 2021 Atmark Techno, Inc. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: (GPL-2.0 OR MIT)
+ */
+
+/dts-v1/;
+
+#define ARMADILLO_IOTG_A6_AT_DTWEB
+#include "armadillo-iotg-a6.dts"
+#include "armadillo-iotg-a6-expansion-interface.dtsi"

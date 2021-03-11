@@ -34,6 +34,13 @@ config RESET_BERLIN
 	help
 	  This enables the reset controller driver for Marvell Berlin SoCs.
 
+config RESET_EMS31
+	bool "GPIO-based Reset Driver for Tales EMS31"
+	default n
+	depends on GPIOLIB && OF
+	help
+	  This enables the gpio-based reset driver for Tales EMS31.
+
 config RESET_HSDK
 	bool "Synopsys HSDK Reset Driver"
 	depends on HAS_IOMEM

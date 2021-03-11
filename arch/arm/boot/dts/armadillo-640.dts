@@ -7,7 +7,7 @@
 /dts-v1/;
 
 #include "imx6ull.dtsi"
-#ifndef ARMADILLO640_AT_DTWEB
+#if !defined(ARMADILLO640_AT_DTWEB) && !defined(ARMADILLO_IOTG_A6)
 #include "armadillo-640-default-console.dtsi"
 #include "armadillo-640-uart5.dtsi"
 #include "armadillo-640-lcd70ext-l00.dtsi"
@@ -143,6 +143,9 @@
 			&pinctrl_lcd70ext_l00hog
 #endif
 #ifdef ARMADILLO640_AT_DTWEB
+			&pinctrl_expansion_interfacehog
+#endif
+#ifdef ARMADILLO_IOTG_A6_AT_DTWEB
 			&pinctrl_expansion_interfacehog
 #endif
 		    >;

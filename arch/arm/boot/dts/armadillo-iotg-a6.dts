@@ -1,0 +1,134 @@
+/*
+ * Copyright (C) 2021 Atmark Techno, Inc. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: (GPL-2.0 OR MIT)
+ */
+
+#define ARMADILLO_IOTG_A6
+#include "armadillo-640.dts"
+
+/ {
+	model = "Atmark Techno Armadillo-IoT Gateway A6";
+
+	chosen {
+		stdout-path = &uart3;
+	};
+
+	aliases {
+		rtc0 = &rtc_nr3225sa;
+	};
+
+	ems31_reset: ems31-reset {
+		compatible = "ems31-reset";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_ems31_reset>;
+		gpio-on = <&gpio3 28 GPIO_ACTIVE_HIGH>;	/* LTE_ON */
+		gpio-pwr = <&gpio3 27 GPIO_ACTIVE_LOW>;	/* LTE_PWR */
+		gpio-lte-gpio25 = <&gpio3 26 GPIO_ACTIVE_HIGH>;	/* V36_LTE_GPIO25 */
+	};
+
+	i2c-gpio1 {
+		pinctrl-names = "default";
+		inctrl-0 = <&pinctrl_i2c_gpio1>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "i2c-gpio";
+		gpios = <
+			&gpio1 31 GPIO_ACTIVE_HIGH
+			&gpio1 30 GPIO_ACTIVE_HIGH
+		>;
+		i2c-gpio,delay-us = <2>;
+
+		rtc_nr3225sa: rtc-nr3225sa {
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_rtc_nr3225sa>;
+
+			compatible = "ndk,nr3225sa";
+			reg = <0x32>;
+
+			interrupt-parent = <&gpio3>;
+			interrupts = <24 IRQ_TYPE_EDGE_FALLING>;
+		};
+
+		se050 {
+			compatible = "i2c-gpio";
+			reg = <0x48>;
+		};
+	};
+
+	gpio-keys {
+		sw1 {
+			label = "SW1";
+			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_ENTER>;
+			gpio-key,wakeup = <1>;
+		};
+	};
+
+	gpio-wakeup {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_wakeup>;
+
+		ring0 {
+			label = "RING0";
+			gpios = <&gpio3 23 GPIO_ACTIVE_LOW>;
+			gpio-key,wakeup = <1>;
+			linux,code = <KEY_WAKEUP>;
+		};
+	};
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2>;
+	status = "okay";
+	uart-has-rtscts;
+};
+
+&iomuxc {
+	pinctrl-names = "default";
+
+	pinctrl_uart2: uart2grp {
+		fsl,pins= <
+			MX6UL_PAD_UART2_TX_DATA__UART2_DCE_TX	0x00008 // CON14_3  LTE_TXD0
+			MX6UL_PAD_UART2_RX_DATA__UART2_DCE_RX	0x1b0b1 // CON14_4  LTE_RXD0
+			MX6UL_PAD_UART2_CTS_B__UART2_DCE_CTS	0x00008 // CON9_1   LTE_RTS0
+			MX6UL_PAD_UART2_RTS_B__UART2_DCE_RTS	0x1b0b1 // CON9_2   LTE_CTS0
+		>;
+	};
+
+	pinctrl_i2c_gpio1: i2cgpio1grp {
+		fsl,pins= <
+			MX6UL_PAD_UART5_RX_DATA__GPIO1_IO31	0x40010008  // EXT_IO2
+			MX6UL_PAD_UART5_TX_DATA__GPIO1_IO30	0x40010008  // EXT_IO4
+		>;
+	};
+
+	pinctrl_se050_enable: se050enable {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA20__GPIO3_IO25	0x00008	// CON9_15  SE_ENA
+		>;
+	};
+
+	pinctrl_ems31_reset: ems31resetgrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA21__GPIO3_IO26	0x00008	// CON9_16  V36_LTE_GPIO25
+			MX6UL_PAD_LCD_DATA22__GPIO3_IO27	0x0b008	// CON9_17  LTE_PWR
+			MX6UL_PAD_LCD_DATA23__GPIO3_IO28	0x0b008	// CON9_18  LTE_ON
+		>;
+	};
+
+	pinctrl_rtc_nr3225sa: rtcnr3225sagrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA19__GPIO3_IO24	0x08000	// CON9_14  RTC_INT_B
+		>;
+	};
+
+	pinctrl_gpio_wakeup: gpio_wakeupgrp {
+		fsl,pins = <
+			MX6UL_PAD_LCD_DATA18__GPIO3_IO23	0x1b0b8 // CON9_13  LTE_RING0
+		>;
+	};
+};

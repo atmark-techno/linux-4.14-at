@@ -268,7 +268,7 @@ static int of_nvmem_match(struct device *dev, void *nvmem_np)
 	return dev->of_node == nvmem_np;
 }
 
-static struct nvmem_device *of_nvmem_find(struct device_node *nvmem_np)
+struct nvmem_device *of_nvmem_find(struct device_node *nvmem_np)
 {
 	struct device *d;
 
@@ -282,6 +282,7 @@ static struct nvmem_device *of_nvmem_find(struct device_node *nvmem_np)
 
 	return to_nvmem_device(d);
 }
+EXPORT_SYMBOL_GPL(of_nvmem_find);
 
 static struct nvmem_cell *nvmem_find_cell(const char *cell_id)
 {

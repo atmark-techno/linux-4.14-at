@@ -426,30 +426,40 @@ static void imx_init_temp_grade(struct platform_device *pdev, u32 val)
 
 static int imx_init_from_tempmon_data(struct platform_device *pdev)
 {
-	struct regmap *map;
+	struct device_node *np;
+	struct nvmem_device *nvdev;
 	int ret;
 	u32 val;
 
-	map = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
-					      "fsl,tempmon-data");
-	if (IS_ERR(map)) {
-		ret = PTR_ERR(map);
-		dev_err(&pdev->dev, "failed to get sensor regmap: %d\n", ret);
-		return ret;
+	np = of_parse_phandle(pdev->dev.of_node, "fsl,tempmon-data", 0);
+	if (!np) {
+		dev_err(&pdev->dev, "failed to get sensor device node\n");
+		return -ENOENT;
 	}
 
-	ret = regmap_read(map, OCOTP_ANA1, &val);
-	if (ret) {
+	nvdev = of_nvmem_find(np);
+	of_node_put(np);
+	if (!nvdev) {
+		dev_err(&pdev->dev, "failed to get nvmem device\n");
+		return -ENOENT;
+	}
+
+	ret = nvmem_device_read(nvdev, OCOTP_ANA1, 4, &val);
+	if (ret < 0) {
+		nvmem_device_put(nvdev);
 		dev_err(&pdev->dev, "failed to read sensor data: %d\n", ret);
 		return ret;
 	}
 	ret = imx_init_calib(pdev, val);
-	if (ret)
-		return ret;
-
-	ret = regmap_read(map, OCOTP_MEM0, &val);
 	if (ret) {
-		dev_err(&pdev->dev, "failed to read sensor data: %d\n", ret);
+		nvmem_device_put(nvdev);
+		return ret;
+	}
+
+	ret = nvmem_device_read(nvdev, OCOTP_MEM0, 4, &val);
+	nvmem_device_put(nvdev);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to read temp grade: %d\n", ret);
 		return ret;
 	}
 	imx_init_temp_grade(pdev, val);

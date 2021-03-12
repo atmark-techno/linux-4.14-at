@@ -278,7 +278,7 @@ put_node:
 static int imx6ul_opp_check_speed_grading(struct device *dev)
 {
 	u32 val;
-	int ret = 0;
+	int ret;
 
 	if (of_find_property(dev->of_node, "nvmem-cells", NULL)) {
 		ret = nvmem_cell_read_u32(dev, "speed_grade", &val);
@@ -286,21 +286,27 @@ static int imx6ul_opp_check_speed_grading(struct device *dev)
 			return ret;
 	} else {
 		struct device_node *np;
-		void __iomem *base;
+		struct nvmem_device *nvdev;
 
 		np = of_find_compatible_node(NULL, NULL, "fsl,imx6ul-ocotp");
-		if (!np)
+		if (!np) {
+			dev_err(dev, "Could not find ocotp device node\n");
 			return -ENOENT;
-
-		base = of_iomap(np, 0);
-		of_node_put(np);
-		if (!base) {
-			dev_err(dev, "failed to map ocotp\n");
-			return -EFAULT;
 		}
 
-		val = readl_relaxed(base + OCOTP_CFG3);
-		iounmap(base);
+		nvdev = of_nvmem_find(np);
+		of_node_put(np);
+		if (!nvdev) {
+			dev_err(dev, "Could not find ocotp device\n");
+			return -ENOENT;
+		}
+
+		ret = nvmem_device_read(nvdev, OCOTP_CFG3, 4, &val);
+		nvmem_device_put(nvdev);
+		if (ret < 0) {
+			dev_err(dev, "Could not read OCOTP_CFG3\n");
+			return ret;
+		}
 	}
 
 	/*
@@ -330,7 +336,7 @@ static int imx6ul_opp_check_speed_grading(struct device *dev)
 				dev_warn(dev, "failed to disable 900MHz OPP\n");
 	}
 
-	return ret;
+	return 0;
 }
 
 static int imx6q_cpufreq_probe(struct platform_device *pdev)

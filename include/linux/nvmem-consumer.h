@@ -54,6 +54,7 @@ ssize_t nvmem_device_cell_read(struct nvmem_device *nvmem,
 			   struct nvmem_cell_info *info, void *buf);
 int nvmem_device_cell_write(struct nvmem_device *nvmem,
 			    struct nvmem_cell_info *info, void *buf);
+struct nvmem_device *of_nvmem_find(struct device_node *nvmem_np);
 
 #else
 
@@ -142,6 +143,11 @@ static inline int nvmem_device_write(struct nvmem_device *nvmem,
 				     void *buf)
 {
 	return -ENOSYS;
+}
+
+static inline struct nvmem_device *of_nvmem_find(struct device_node *nvmem_np)
+{
+	return NULL;
 }
 #endif /* CONFIG_NVMEM */
 

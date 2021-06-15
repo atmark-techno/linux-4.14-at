@@ -61,7 +61,7 @@
 			MX6UL_PAD_LCD_ENABLE__GPIO3_IO01    0x400010b0 // CON2_40  {{external-gpio-40}}
 			MX6UL_PAD_NAND_DQS__GPIO4_IO16      0x400010b0 // CON2_41  {{external-gpio-41}}
 									   // CON2_42  BJP1
-			MX6UL_PAD_JTAG_MOD__GPIO1_IO10      0x400010b0 // CON2_43  {{external-gpio-43}}
+			MX6UL_PAD_JTAG_MOD__GPIO1_IO10      0x10b0 // CON2_43  {{external-gpio-43}}
 									   // CON2_44  RESETBMCU
 									   // CON2_45  VCC_3.3V
 									   // CON2_46  VCC_3.3V

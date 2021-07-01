@@ -29,7 +29,7 @@
 
 	i2c-gpio1 {
 		pinctrl-names = "default";
-		inctrl-0 = <&pinctrl_i2c_gpio1>;
+		pinctrl-0 = <&pinctrl_i2c_gpio1>;
 
 		#address-cells = <1>;
 		#size-cells = <0>;

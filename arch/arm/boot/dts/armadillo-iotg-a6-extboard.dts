@@ -1,0 +1,51 @@
+/*
+ * Copyright (C) 2021 Atmark Techno, Inc. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: (GPL-2.0 OR MIT)
+ */
+
+#include "armadillo-iotg-a6.dts"
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart1>;
+	status = "okay";
+	fsl,uart-has-rtscts;
+	rs485-rts-on-send;
+	rts-gpios = <&gpio4 6 GPIO_ACTIVE_HIGH>;
+	rs485-enabled-at-boot-time;
+};
+
+&i2c_gpio1 {
+	gpio@20 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_ext>;
+
+		compatible = "nxp,pca9534";
+		reg = <0x20>;
+
+		gpio-controller;
+		#gpio-cells = <2>;
+
+		interrupt-parent = <&gpio4>;
+		interrupts = <8 IRQ_TYPE_LEVEL_LOW>;
+
+		wakeup-source;
+	};
+};
+
+&iomuxc {
+	pinctrl_uart1: uart1grp {
+		fsl,pins = <
+			MX6UL_PAD_UART1_TX_DATA__UART1_DCE_TX	0x00008		/* RS485_TX	 */
+			MX6UL_PAD_UART1_RX_DATA__UART1_DCE_RX	0x1b0b1		/* RS485_RX	 */
+			MX6UL_PAD_NAND_DATA04__GPIO4_IO06	0x00008		/* RS485_DE/RE_N */
+		>;
+	};
+
+	pinctrl_gpio_ext: gpioextgrp {
+		fsl,pins = <
+			MX6UL_PAD_NAND_DATA06__GPIO4_IO08	0x08000		/* GPIO_INT_N	 */
+		>;
+	};
+};

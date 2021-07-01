@@ -27,7 +27,7 @@
 		gpio-lte-gpio25 = <&gpio3 26 GPIO_ACTIVE_HIGH>;	/* V36_LTE_GPIO25 */
 	};
 
-	i2c-gpio1 {
+	i2c_gpio1: i2c-gpio1 {
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_i2c_gpio1>;
 

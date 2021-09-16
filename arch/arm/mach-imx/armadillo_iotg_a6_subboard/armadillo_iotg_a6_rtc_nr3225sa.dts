@@ -1,0 +1,41 @@
+/*
+ * Copyright (C) 2021 Atmark Techno, Inc. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: (GPL-2.0 OR MIT)
+ */
+
+#include <dt-bindings/interrupt-controller/irq.h>
+#include "../../../../arch/arm/boot/dts/imx6ul-pinfunc.h"
+
+/dts-v1/;
+/plugin/;
+/ {
+	fragment@0 {
+		target = <&i2c_gpio1>;
+		__overlay__ {
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			rtc_nr3225sa: rtc-nr3225sa {
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_rtc>;
+
+				compatible = "ndk,nr3225sa";
+				reg = <0x32>;
+
+				interrupt-parent = <&gpio3>;
+				interrupts = <24 IRQ_TYPE_EDGE_FALLING>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target-path = "/";
+		__overlay__ {
+			aliases {
+				rtc0 = &rtc_nr3225sa;
+			};
+		};
+	};
+};

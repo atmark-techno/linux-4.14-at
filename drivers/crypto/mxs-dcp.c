@@ -330,7 +330,7 @@ static int mxs_dcp_aes_block_crypt(struct crypto_async_request *arq)
 	/*
 	 * We are not supporting the case where there is no message to encrypt
 	 */
-	if (nents == 0)
+	if (sg_nents(src) == 0)
 		return -EINVAL;
 
 	/* Copy the key from the temporary location. */

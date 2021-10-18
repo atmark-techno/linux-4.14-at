@@ -8,18 +8,18 @@
 	pinctrl_expansion_interfacehog: expansion_interfacehoggrp {
 		fsl,pins = <
 			/* CON7 */
-								           // CON7_1   VCC_3.3V
+								           // CON7_1   VCC_5V
 								           // CON7_2   GND
-			MX6UL_PAD_UART1_RX_DATA__GPIO1_IO17	0x400010b0 // CON7_3   {{external-gpio-3}}
-								           // CON7_4   I2C
-			MX6UL_PAD_UART1_TX_DATA__GPIO1_IO16	0x400010b0 // CON7_5   {{external-gpio-5}}
-								           // CON7_6   I2C
+								           // CON7_3   RTC_BATT_IN
+								           // CON7_4   GND
+			MX6UL_PAD_NAND_DATA06__GPIO4_IO08	0x400010b0 // CON7_5   {{external-gpio-5}}
+			MX6UL_PAD_NAND_DATA07__GPIO4_IO09	0x400010b0 // CON7_6   {{external-gpio-6}}
 			MX6UL_PAD_NAND_DATA04__GPIO4_IO06	0x400010b0 // CON7_7   {{external-gpio-7}}
 			MX6UL_PAD_NAND_DATA05__GPIO4_IO07	0x400010b0 // CON7_8   {{external-gpio-8}}
-			MX6UL_PAD_NAND_DATA06__GPIO4_IO08	0x400010b0 // CON7_9   {{external-gpio-9}}
-			MX6UL_PAD_NAND_DATA07__GPIO4_IO09	0x400010b0 // CON7_10  {{external-gpio-10}}
-								           // CON7_11  RTC_BATT_IN
-								           // CON7_12  GND
+			MX6UL_PAD_UART1_TX_DATA__GPIO1_IO16	0x400010b0 // CON7_9   {{external-gpio-9}}
+								           // CON7_10  I2C
+			MX6UL_PAD_UART1_RX_DATA__GPIO1_IO17	0x400010b0 // CON7_11  {{external-gpio-11}}
+								           // CON7_12  I2C
 								           // CON7_13  VCC_3.3V
 								           // CON7_14  GND
 		>;

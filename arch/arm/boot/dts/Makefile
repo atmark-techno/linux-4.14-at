@@ -1081,6 +1081,12 @@ dtb-$(CONFIG_ARCH_ASPEED) += aspeed-bmc-opp-palmetto.dtb \
 	aspeed-ast2500-evb.dtb
 endif
 
+ifeq ($(CONFIG_OF_OVERLAY),y)
+DTC_FLAGS_armadillo-iotg-a6 := -@
+DTC_FLAGS_armadillo-iotg-a6-at-dtweb := -@
+DTC_FLAGS_armadillo-iotg-a6-extboard := -@
+endif
+
 dtstree		:= $(srctree)/$(src)
 dtb-$(CONFIG_OF_ALL_DTBS) := $(patsubst $(dtstree)/%.dts,%.dtb, $(wildcard $(dtstree)/*.dts))
 

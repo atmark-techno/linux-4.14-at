@@ -94,6 +94,9 @@ EXPORT_SYMBOL(cacheid);
 
 unsigned int __atags_pointer __initdata;
 
+const char *system_revision;
+EXPORT_SYMBOL(system_revision);
+
 unsigned int system_rev;
 EXPORT_SYMBOL(system_rev);
 
@@ -959,6 +962,16 @@ static int __init init_machine_late(void)
 					  system_serial_high,
 					  system_serial_low);
 
+	if (root) {
+		ret = of_property_read_string(root, "revision-number",
+					      &system_revision);
+		if (ret)
+			system_revision = NULL;
+	}
+
+	if (!system_revision)
+		system_revision = kasprintf(GFP_KERNEL, "%04x", system_rev);
+
 	return 0;
 }
 late_initcall(init_machine_late);
@@ -1286,7 +1299,7 @@ static int c_show(struct seq_file *m, void *v)
 	}
 
 	seq_printf(m, "Hardware\t: %s\n", machine_name);
-	seq_printf(m, "Revision\t: %04x\n", system_rev);
+	seq_printf(m, "Revision\t: %s\n", system_revision);
 	seq_printf(m, "Serial\t\t: %s\n", system_serial);
 
 	return 0;

@@ -14,10 +14,6 @@
 		stdout-path = &uart3;
 	};
 
-	aliases {
-		rtc0 = &rtc_nr3225sa;
-	};
-
 	ems31_reset: ems31-reset {
 		compatible = "ems31-reset";
 		pinctrl-names = "default";
@@ -40,21 +36,14 @@
 		>;
 		i2c-gpio,delay-us = <2>;
 
-		rtc_nr3225sa: rtc-nr3225sa {
-			pinctrl-names = "default";
-			pinctrl-0 = <&pinctrl_rtc_nr3225sa>;
-
-			compatible = "ndk,nr3225sa";
-			reg = <0x32>;
-
-			interrupt-parent = <&gpio3>;
-			interrupts = <24 IRQ_TYPE_EDGE_FALLING>;
-		};
-
 		se050 {
 			compatible = "i2c-gpio";
 			reg = <0x48>;
 		};
+	};
+
+	rtc-select {
+		compatible = "armadillo_iotg_a6_subboard";
 	};
 
 	gpio-keys {
@@ -120,7 +109,7 @@
 		>;
 	};
 
-	pinctrl_rtc_nr3225sa: rtcnr3225sagrp {
+	pinctrl_rtc: rtcgrp {
 		fsl,pins = <
 			MX6UL_PAD_LCD_DATA19__GPIO3_IO24	0x08000	// CON9_14  RTC_INT_B
 		>;

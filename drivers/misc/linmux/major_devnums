@@ -1,0 +1,25 @@
+###############################################################################
+#
+# (c) 2013 Gemalto M2M GmbH <wmSupport@gemalto.com>
+#
+# All Rights Reserved.
+#
+# Cinterion provides this source code under the GPL v2 License.
+# The GPL v2 license is available at
+#
+# http://opensource.org/licenses/gpl-license.php
+#
+###############################################################################
+
+# The major device number of the linmux tty device.
+# For each additional instance of the linmux driver this number is incremented by 1.
+# So if there are more than one instance used there must be a corresponding range of
+# free device numbers.
+tty_major_devnum := 240
+
+# The major device number of the linmux chracter device.
+fs_major_devnum := 239
+
+# The name of the linmux character device for configuration
+fs_device_name := linmuxcfg
+

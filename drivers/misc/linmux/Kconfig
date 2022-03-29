@@ -1,0 +1,12 @@
+menu "Cinterion Linmux Driver"
+
+config LINMUX_INSTANCES
+	int "Linmux instances"
+	depends on X86
+	default 1
+        range 1 256
+	help
+	  This option defines the number of driver instances.
+
+endmenu
+

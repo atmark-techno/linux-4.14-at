@@ -524,6 +524,7 @@ config SOC_IMX6UL
 	bool "i.MX6 UltraLite support"
 	select PINCTRL_IMX6UL
 	select SOC_IMX6
+	select OF_OVERLAY
 
 	help
 	  This enables support for Freescale i.MX6 UltraLite processor.

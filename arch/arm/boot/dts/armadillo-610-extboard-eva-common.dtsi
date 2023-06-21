@@ -207,6 +207,10 @@
 	status = "okay";
 };
 
+&usbphy1 {
+	fsl,tx-d-cal = <106>;
+};
+
 &usbotg2 {
 	vbus-supply = <&reg_usbotg2_vbus>;
 	dr_mode = "host";

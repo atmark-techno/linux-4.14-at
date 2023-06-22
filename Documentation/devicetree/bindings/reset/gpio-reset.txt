@@ -18,6 +18,10 @@ Optional properties:
 - initially-in-reset: boolean. If not set, the initial state should be a
                       deasserted reset line. If this property exists, the
                       reset line should be kept in reset.
+- reset-assert-in-suspend: The gpio reset should be assert in suspend state.
+                           Don't use with high level driver to avoid competition.
+- reset-deassert-in-suspend: The gpio reset should be deassert in suspend state.
+                             Don't use with high level driver to avoid competition.
 
 example:
 

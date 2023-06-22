@@ -17,12 +17,27 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/reset-controller.h>
 
+/*
+ * operations in suspend mode
+ * DO_NOTHING_IN_SUSPEND - the default value
+ * ASSERT_IN_SUSPEND	 - assert reset in suspend states
+ * DEASSERT_IN_SUSPEND	 - de-assert reset in suspend states
+ */
+
+#define DO_NOTHING_IN_SUSPEND	0
+#define ASSERT_IN_SUSPEND	1
+#define DEASSERT_IN_SUSPEND	2
+
 struct gpio_reset_data {
 	struct reset_controller_dev rcdev;
 	unsigned int gpio;
 	bool active_low;
 	s32 delay_us;
 	s32 wait_delay_us;
+
+	/* suspend states of reset */
+	int suspend_action;
+	int pre_suspend_state;
 };
 
 static void gpio_reset_set(struct reset_controller_dev *rcdev, int asserted)
@@ -35,6 +50,20 @@ static void gpio_reset_set(struct reset_controller_dev *rcdev, int asserted)
 		value = !value;
 
 	gpio_set_value_cansleep(drvdata->gpio, value);
+}
+
+static int gpio_reset_get(struct reset_controller_dev *rcdev)
+{
+	struct gpio_reset_data *drvdata = container_of(rcdev,
+			struct gpio_reset_data, rcdev);
+	int value;
+
+	value = gpio_get_value_cansleep(drvdata->gpio);
+
+	if (drvdata->active_low)
+		value = !value;
+
+	return value;
 }
 
 static int gpio_reset(struct reset_controller_dev *rcdev, unsigned long id)
@@ -75,10 +104,17 @@ static int gpio_reset_deassert(struct reset_controller_dev *rcdev,
 	return 0;
 }
 
+static int gpio_reset_status(struct reset_controller_dev *rcdev,
+		unsigned long id)
+{
+	return gpio_reset_get(rcdev);
+}
+
 static struct reset_control_ops gpio_reset_ops = {
 	.reset = gpio_reset,
 	.assert = gpio_reset_assert,
 	.deassert = gpio_reset_deassert,
+	.status = gpio_reset_status,
 };
 
 static int of_gpio_reset_xlate(struct reset_controller_dev *rcdev,
@@ -151,6 +187,11 @@ static int gpio_reset_probe(struct platform_device *pdev)
 			gpio_reset(&drvdata->rcdev, 0);
 	}
 
+	if (of_property_read_bool(np, "reset-assert-in-suspend"))
+		drvdata->suspend_action = ASSERT_IN_SUSPEND;
+	if (of_property_read_bool(np, "reset-deassert-in-suspend"))
+		drvdata->suspend_action = DEASSERT_IN_SUSPEND;
+
 	platform_set_drvdata(pdev, drvdata);
 
 	drvdata->rcdev.of_node = np;
@@ -180,13 +221,32 @@ static struct of_device_id gpio_reset_dt_ids[] = {
 #ifdef CONFIG_PM_SLEEP
 static int gpio_reset_suspend(struct device *dev)
 {
+	struct gpio_reset_data *drvdata = dev_get_drvdata(dev);
+
+	if (drvdata->suspend_action != DO_NOTHING_IN_SUSPEND) {
+		drvdata->pre_suspend_state = gpio_reset_status(&drvdata->rcdev, 0);
+		if (drvdata->suspend_action == ASSERT_IN_SUSPEND)
+			gpio_reset_assert(&drvdata->rcdev, 0);
+		else if (drvdata->suspend_action == DEASSERT_IN_SUSPEND)
+			gpio_reset_deassert(&drvdata->rcdev, 0);
+	}
+
 	pinctrl_pm_select_sleep_state(dev);
 
 	return 0;
 }
 static int gpio_reset_resume(struct device *dev)
 {
+	struct gpio_reset_data *drvdata = dev_get_drvdata(dev);
+
 	pinctrl_pm_select_default_state(dev);
+
+	if (drvdata->suspend_action != DO_NOTHING_IN_SUSPEND) {
+		if (drvdata->pre_suspend_state)
+			gpio_reset_assert(&drvdata->rcdev, 0);
+		else
+			gpio_reset_deassert(&drvdata->rcdev, 0);
+	}
 
 	return 0;
 }
